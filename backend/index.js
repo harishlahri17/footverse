@@ -12,7 +12,14 @@ require("dotenv").config();
 
 
 const app = express();
-app.use(cors());
+
+//cors connection
+const corsOption = {
+    origin: process.env.FRONTEND_URL,
+    credentials: true
+}
+app.use(cors(corsOption));
+
 app.use(bodyParser.json());
 
 
