@@ -40,7 +40,7 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         env:
-          VITE_API_BASE_URL: https://example.invalid
+          VITE_API_BASE_URL: https://footverse-x0ya.onrender.com
         run: npm run build
 
       - name: Install backend dependencies
@@ -65,5 +65,29 @@ jobs:
       - name: Build frontend image
         run: |
           docker build \
-            --build-arg VITE_API_BASE_URL=https://example.invalid \
+            --build-arg VITE_API_BASE_URL=https://footverse-x0ya.onrender.com \
             -t footverse-frontend:ci ./frontend
+
+  deploy-backend:
+    needs: docker-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy backend to Render
+        env:
+          DEPLOY_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error "$DEPLOY_URL"
+
+
+  deploy-frontend:
+    needs: docker-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Vercel deployment
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          curl --fail --silent --show-error "$DEPLOY_URL"
