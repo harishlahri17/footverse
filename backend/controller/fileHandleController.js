@@ -1,42 +1,32 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-
-// Common storage function
-const storageConfig = (folderName) =>
-  multer.diskStorage({
-    destination: function (req, file, cb) {
-      const uploadPath = `media/${folderName}`;
-      if (!fs.existsSync(uploadPath)) {
-        fs.mkdirSync(uploadPath, { recursive: true });
-      }
-      cb(null, uploadPath);
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: "footverse/products",
+        allowed_formats: ["jpg", "jpeg", "png"],
     },
-    filename: function (req, file, cb) {
-      cb(null, `${Date.now()}-${file.originalname}`);
-    },
-  });
-
-// File filter (only images allowed)
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only images are allowed"));
-  }
-};
-
-// Separate upload handlers
-const uploadProduct = multer({
-  storage: storageConfig("products"),
-  limits: { fileSize: 2 * 1024 * 1024 },
-  fileFilter,
 });
 
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png"];
 
-module.exports = {uploadProduct};
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error("Only JPG, JPEG and PNG images are allowed"));
+    }
+};
+
+const uploadProduct = multer({
+    storage,
+    limits: {
+        fileSize: 2 * 1024 * 1024,
+        files: 5,
+    },
+    fileFilter,
+});
+
+module.exports = { uploadProduct };

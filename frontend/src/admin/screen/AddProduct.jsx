@@ -1,50 +1,50 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { BaseUrl } from '../../axiosInstance';
 import { toast } from 'react-toastify';
-import { 
-    Box, Grid, TextField, Select, MenuItem, FormControl, InputLabel, 
+import {
+    Box, Grid, TextField, Select, MenuItem, FormControl, InputLabel,
     Button, IconButton, Typography, List, ListItem, ListItemText, ListItemSecondaryAction, Divider, Paper, InputAdornment, Chip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PageHeader from '../component/mui/PageHeader';
 
 import {
-  LocalOfferOutlined as TagIcon,
-  CheckCircle as CheckCircleIcon,
-  GridView as GridIcon,
-  FormatBold as BoldIcon,
-  FormatItalic as ItalicIcon,
-  FormatUnderlined as UnderlineIcon,
-  FormatAlignLeft as AlignLeftIcon,
-  FormatAlignCenter as AlignCenterIcon,
-  FormatListBulleted as BulletListIcon,
-  FormatListNumbered as NumberListIcon,
-  InsertLink as LinkIcon,
-  InsertPhotoOutlined as ImageIcon,
-  Code as CodeIcon,
-  CloudUploadOutlined as UploadCloudIcon,
-  Close as CloseIcon,
-  RemoveRedEyeOutlined as EyeIcon,
-  Star as StarIcon,
-  LocalShippingOutlined as ShippingIcon,
-  AutorenewOutlined as ReturnIcon,
-  VerifiedUserOutlined as ShieldIcon,
-  ShoppingCartOutlined as CartIcon,
-  FavoriteBorder as HeartIcon,
-  InfoOutlined as InfoIcon,
-  KeyboardArrowDown as ChevronDownIcon,
-  LayersOutlined as CubeIcon
+    LocalOfferOutlined as TagIcon,
+    CheckCircle as CheckCircleIcon,
+    GridView as GridIcon,
+    FormatBold as BoldIcon,
+    FormatItalic as ItalicIcon,
+    FormatUnderlined as UnderlineIcon,
+    FormatAlignLeft as AlignLeftIcon,
+    FormatAlignCenter as AlignCenterIcon,
+    FormatListBulleted as BulletListIcon,
+    FormatListNumbered as NumberListIcon,
+    InsertLink as LinkIcon,
+    InsertPhotoOutlined as ImageIcon,
+    Code as CodeIcon,
+    CloudUploadOutlined as UploadCloudIcon,
+    Close as CloseIcon,
+    RemoveRedEyeOutlined as EyeIcon,
+    Star as StarIcon,
+    LocalShippingOutlined as ShippingIcon,
+    AutorenewOutlined as ReturnIcon,
+    VerifiedUserOutlined as ShieldIcon,
+    ShoppingCartOutlined as CartIcon,
+    FavoriteBorder as HeartIcon,
+    InfoOutlined as InfoIcon,
+    KeyboardArrowDown as ChevronDownIcon,
+    LayersOutlined as CubeIcon
 } from '@mui/icons-material';
 
 const COLOR_PALETTE = [
-  { name: 'Core Black', hex: '#000000', value: 'black' },
-  { name: 'Pure White', hex: '#FFFFFF', value: 'white' },
-  { name: 'Crimson Red', hex: '#EF4444', value: 'red' },
-  { name: 'Royal Blue', hex: '#3B82F6', value: 'blue' },
-  { name: 'Volt Lime', hex: '#84CC16', value: 'lime' },
-  { name: 'Olive Green', hex: '#65A30D', value: 'olive' },
-  { name: 'Triple Slate', hex: '#64748B', value: 'slate' },
-  { name: 'Desert Tan', hex: '#D97706', value: 'tan' }
+    { name: 'Core Black', hex: '#000000', value: 'black' },
+    { name: 'Pure White', hex: '#FFFFFF', value: 'white' },
+    { name: 'Crimson Red', hex: '#EF4444', value: 'red' },
+    { name: 'Royal Blue', hex: '#3B82F6', value: 'blue' },
+    { name: 'Volt Lime', hex: '#84CC16', value: 'lime' },
+    { name: 'Olive Green', hex: '#65A30D', value: 'olive' },
+    { name: 'Triple Slate', hex: '#64748B', value: 'slate' },
+    { name: 'Desert Tan', hex: '#D97706', value: 'tan' }
 ];
 
 const AVAILABLE_SIZES = ['6', '7', '8', '9', '10'];
@@ -120,7 +120,7 @@ export default function AddProduct() {
     const handleAddSpec = () => {
         if (!specInput.trim()) return;
         setSpecification([...specification, specInput]);
-        setSpecInput(""); 
+        setSpecInput("");
     };
 
     const handleRemoveSpec = (index) => {
@@ -149,7 +149,7 @@ export default function AddProduct() {
             images.forEach((img) => {
                 payload.append("productImages", img.file);
             });
-            
+
             images.forEach((img) => {
                 payload.append("imageTags", img.tag);
             });
@@ -169,7 +169,7 @@ export default function AddProduct() {
                 setFormData({
                     productId: "",
                     productName: "",
-                    brand:"",
+                    brand: "",
                     discription: "",
                     specification: "",
                     category: "",
@@ -187,7 +187,12 @@ export default function AddProduct() {
                 }
             }
         } catch (error) {
-            toast.error(error || "Something went wrong !");
+            toast.error(
+                error.response?.data?.Message ||
+                error.response?.data?.message ||
+                error.message ||
+                "Something went wrong!"
+            );
         }
     };
 
@@ -195,7 +200,7 @@ export default function AddProduct() {
         <form onSubmit={handleSubmit}>
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 340px' }, gap: 3.5, alignItems: 'flex-start' }}>
                 {/* LEFT CARD: Form */}
-                <Box sx={{ 
+                <Box sx={{
                     display: 'flex', flexDirection: 'column', gap: 3,
                     height: { lg: 'calc(100vh - 120px)' },
                     overflowY: { lg: 'auto' },
@@ -204,13 +209,13 @@ export default function AddProduct() {
                     '&::-webkit-scrollbar': { width: '6px' },
                     '&::-webkit-scrollbar-thumb': { bgcolor: 'divider', borderRadius: '4px' }
                 }}>
-                    <PageHeader 
-                        title="Add New Product" 
+                    <PageHeader
+                        title="Add New Product"
                         breadcrumbs={[
                             { label: 'Home', path: '/' },
                             { label: 'Products', path: '/products-table' },
                             { label: 'Add Product' }
-                        ]} 
+                        ]}
                     />
                     {/* Card 1: Product Identification */}
                     <Paper elevation={0} sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
@@ -267,7 +272,7 @@ export default function AddProduct() {
                                 Product Details
                             </Typography>
                         </Box>
-                        
+
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.75 }}>
                             <Box>
                                 <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.75 }}>Product Description</Typography>
@@ -281,16 +286,16 @@ export default function AddProduct() {
                             <Box>
                                 <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.75 }}>Product Specification</Typography>
                                 <Box sx={{ display: 'flex', gap: 1.5 }}>
-                                    <TextField 
-                                        fullWidth 
-                                        size="small" 
-                                        placeholder="e.g. Breathable mesh upper" 
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="e.g. Breathable mesh upper"
                                         value={specInput}
                                         onChange={(e) => setSpecInput(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSpec())}
                                     />
-                                    <Button 
-                                        variant="contained" 
+                                    <Button
+                                        variant="contained"
                                         onClick={handleAddSpec}
                                         disabled={!specInput.trim()}
                                         sx={{ bgcolor: '#5E48E8', color: '#FFFFFF', fontWeight: 700, px: 3, borderRadius: 2, '&:hover': { bgcolor: '#4834D4' } }}
@@ -387,9 +392,9 @@ export default function AddProduct() {
                                             const isSelected = formData.size.includes(sz);
                                             return (
                                                 <Box key={sz} onClick={() => {
-                                                        const exists = formData.size.includes(sz);
-                                                        setFormData({ ...formData, size: exists ? formData.size.filter(s => s !== sz) : [...formData.size, sz] });
-                                                    }}
+                                                    const exists = formData.size.includes(sz);
+                                                    setFormData({ ...formData, size: exists ? formData.size.filter(s => s !== sz) : [...formData.size, sz] });
+                                                }}
                                                     sx={{
                                                         px: 2.5, py: 1, borderRadius: '24px', border: '1px solid',
                                                         borderColor: isSelected ? '#5E48E8' : '#E2E8F0', bgcolor: isSelected ? '#5E48E8' : 'background.paper',
@@ -415,7 +420,7 @@ export default function AddProduct() {
                                         {COLOR_PALETTE.map((color) => {
                                             const isSelected = formData.color === color.value;
                                             return (
-                                                <Box key={color.name} onClick={() => setFormData({...formData, color: color.value})} sx={{
+                                                <Box key={color.name} onClick={() => setFormData({ ...formData, color: color.value })} sx={{
                                                     display: 'flex', alignItems: 'center', gap: 1.5, p: 1.25, borderRadius: '12px',
                                                     border: '1px solid', borderColor: isSelected ? '#5E48E8' : '#E2E8F0', bgcolor: isSelected ? 'rgba(94, 72, 232, 0.1)' : 'background.paper',
                                                     cursor: 'pointer', transition: 'all 0.15s ease', '&:hover': { borderColor: '#5E48E8' }
@@ -476,8 +481,8 @@ export default function AddProduct() {
                                                     let badgeIcon = <ImageIcon sx={{ fontSize: 14, mr: 0.5 }} />;
                                                     let bottomText = "🖼️ Gallery Image";
                                                     let bottomBg = "#FFFFFF";
-                                                    
-                                                    const isPrimary = img.isMain || (idx === 0 && !images.find(i=>i.isMain));
+
+                                                    const isPrimary = img.isMain || (idx === 0 && !images.find(i => i.isMain));
 
                                                     if (isPrimary) {
                                                         label = "PRIMARY COVER";
@@ -507,8 +512,8 @@ export default function AddProduct() {
                                                             </Box>
                                                             <Box sx={{ p: 1, bgcolor: bottomBg, borderTop: '1px solid', borderColor: borderColor === '#E2E8F0' ? 'divider' : 'transparent', display: 'flex', alignItems: 'center' }}>
                                                                 <FormControl fullWidth size="small" variant="standard" sx={{ '& .MuiInput-underline:before': { borderBottom: 'none' }, '& .MuiInput-underline:after': { borderBottom: 'none' }, '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottom: 'none' }, ml: 1 }}>
-                                                                    <Select 
-                                                                        value={isPrimary ? 'main' : (idx === 1 ? 'hover' : 'gallery')} 
+                                                                    <Select
+                                                                        value={isPrimary ? 'main' : (idx === 1 ? 'hover' : 'gallery')}
                                                                         onChange={(e) => {
                                                                             const val = e.target.value;
                                                                             if (val === 'main') {
@@ -516,7 +521,7 @@ export default function AddProduct() {
                                                                             } else if (val === 'hover') {
                                                                                 const newImages = [...images];
                                                                                 const currentIndex = newImages.findIndex(i => i.id === img.id);
-                                                                                if(currentIndex !== 1 && newImages.length > 1) {
+                                                                                if (currentIndex !== 1 && newImages.length > 1) {
                                                                                     const temp = newImages[1];
                                                                                     newImages[1] = newImages[currentIndex];
                                                                                     newImages[currentIndex] = temp;
@@ -550,7 +555,7 @@ export default function AddProduct() {
                             variant="outlined"
                             onClick={() => {
                                 setFormData({
-                                    productId: "", productName: "", brand:"", discription: "",
+                                    productId: "", productName: "", brand: "", discription: "",
                                     specification: "", category: "", type: "", price: "", size: [], color: "", productImage: null,
                                 });
                                 setImages([]);
@@ -574,115 +579,115 @@ export default function AddProduct() {
                             Create Product
                         </Button>
                     </Box>
-                    </Box>
+                </Box>
 
-                    {/* RIGHT CARD: Preview */}
-                    <Box>
-                        <Paper elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.default', overflow: 'hidden' }}>
-                            {/* Image Area */}
-                            <Box sx={{ 
-                                position: 'relative', height: 290, bgcolor: 'background.default',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                                '&:hover .hover-img': { opacity: 1 },
-                                '&:hover .main-img': { opacity: 0 }
-                            }}>
-                                {images.length > 0 ? (
-                                    <>
-                                        <Box className="main-img" component="img" src={images.find(i=>i.isMain)?.preview || images[0]?.preview} alt="Product Showcase" sx={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.3s ease', opacity: 1 }} />
-                                        {images.length > 1 && (
-                                            <Box className="hover-img" component="img" src={images[1]?.preview} alt="Hover Showcase" sx={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.3s ease', opacity: 0 }} />
-                                        )}
-                                    </>
-                                ) : (
-                                    <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 700, opacity: 0.8 }}>No Image</Typography>
+                {/* RIGHT CARD: Preview */}
+                <Box>
+                    <Paper elevation={0} sx={{ borderRadius: '24px', border: '1px solid', borderColor: 'divider', bgcolor: 'background.default', overflow: 'hidden' }}>
+                        {/* Image Area */}
+                        <Box sx={{
+                            position: 'relative', height: 290, bgcolor: 'background.default',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                            '&:hover .hover-img': { opacity: 1 },
+                            '&:hover .main-img': { opacity: 0 }
+                        }}>
+                            {images.length > 0 ? (
+                                <>
+                                    <Box className="main-img" component="img" src={images.find(i => i.isMain)?.preview || images[0]?.preview} alt="Product Showcase" sx={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.3s ease', opacity: 1 }} />
+                                    {images.length > 1 && (
+                                        <Box className="hover-img" component="img" src={images[1]?.preview} alt="Hover Showcase" sx={{ position: 'absolute', width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.3s ease', opacity: 0 }} />
+                                    )}
+                                </>
+                            ) : (
+                                <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 700, opacity: 0.8 }}>No Image</Typography>
+                            )}
+
+                            {/* Top Badges */}
+                            <Box sx={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 1 }}>
+                                <Chip label={formData.category ? formData.category.toUpperCase() : "UNISEX"} sx={{ bgcolor: 'divider', color: 'text.primary', fontWeight: 800, height: 28, fontSize: '0.75rem', borderRadius: 1.5 }} />
+                                {formData.price && (
+                                    <Chip label="18% OFF" sx={{ bgcolor: '#E11D48', color: '#FFFFFF', fontWeight: 800, height: 28, fontSize: '0.75rem', borderRadius: 1.5 }} />
                                 )}
+                            </Box>
+                            <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
+                                <Chip label={formData.brand || "Brand"} sx={{ bgcolor: 'background.paper', color: 'text.primary', fontWeight: 800, height: 28, fontSize: '0.75rem', borderRadius: 1.5 }} />
+                                <Box sx={{ width: 28, height: 28, bgcolor: 'background.paper', borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
+                                    <HeartIcon sx={{ fontSize: 16 }} />
+                                </Box>
+                            </Box>
 
-                                {/* Top Badges */}
-                                <Box sx={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 1 }}>
-                                    <Chip label={formData.category ? formData.category.toUpperCase() : "UNISEX"} sx={{ bgcolor: 'divider', color: 'text.primary', fontWeight: 800, height: 28, fontSize: '0.75rem', borderRadius: 1.5 }} />
-                                    {formData.price && (
-                                        <Chip label="18% OFF" sx={{ bgcolor: '#E11D48', color: '#FFFFFF', fontWeight: 800, height: 28, fontSize: '0.75rem', borderRadius: 1.5 }} />
+                            {/* Bottom Badges */}
+                            <Box sx={{ position: 'absolute', bottom: 16, left: 16 }}>
+                                <Chip icon={<ReturnIcon sx={{ fontSize: 14 }} />} label="Hover to preview Angle 2" sx={{ bgcolor: 'background.paper', backdropFilter: 'blur(4px)', color: 'text.secondary', fontWeight: 700, height: 28, fontSize: '0.75rem', borderRadius: 3, '& .MuiChip-icon': { color: 'text.secondary' } }} />
+                            </Box>
+                            <Box sx={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', gap: 0.5 }}>
+                                <Box sx={{ width: 14, height: 6, borderRadius: 3, bgcolor: (t) => t.palette.mode === 'dark' ? '#818CF8' : '#4F46E5' }} />
+                                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'divider' }} />
+                            </Box>
+                        </Box>
+
+                        {/* Details Area */}
+                        <Box sx={{ p: 2.5, pt: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700, letterSpacing: 0.5 }}>{formData.productId || 'NK-PULSE-26X'}</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <StarIcon sx={{ color: '#F59E0B', fontSize: 14 }} />
+                                    <Typography variant="caption" sx={{ color: '#F59E0B', fontWeight: 800 }}>4.9</Typography>
+                                </Box>
+                            </Box>
+
+                            <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', fontSize: '1.4rem', lineHeight: 1.2, mb: 0.25 }}>{formData.productName || 'Nike Air Max Pulse 2026'}</Typography>
+                            <Typography variant="caption" sx={{ color: (t) => t.palette.mode === 'dark' ? '#818CF8' : '#4F46E5', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase' }}>{formData.type || 'SNEAKERS'}</Typography>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2.5, mb: 3 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+                                    <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', fontSize: '1.75rem', lineHeight: 1 }}>₹{formData.price || '0'}</Typography>
+                                    <Typography variant="body1" sx={{ color: 'text.disabled', fontWeight: 600, textDecoration: 'line-through', mb: 0.25 }}>₹{formData.price ? (Number(formData.price) * 1.18).toFixed(0) : '0'}</Typography>
+                                </Box>
+                                <Chip label="In Stock: 48" sx={{ bgcolor: 'rgba(5, 150, 105, 0.1)', color: (t) => t.palette.mode === 'dark' ? '#34D399' : '#059669', fontWeight: 800, height: 26, fontSize: '0.75rem', borderRadius: 1.5 }} />
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>COLOR:</Typography>
+                                    <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 800, textTransform: 'uppercase' }}>{COLOR_PALETTE.find(c => c.value === formData.color)?.name || 'CORE BLACK'}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                    {formData.color ? (
+                                        <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: COLOR_PALETTE.find(c => c.value === formData.color)?.hex || '#000000', border: '3px solid #E0E7FF', outline: '2px solid #4F46E5', outlineOffset: -1 }} />
+                                    ) : (
+                                        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Select color...</Typography>
                                     )}
                                 </Box>
-                                <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
-                                    <Chip label={formData.brand || "Brand"} sx={{ bgcolor: 'background.paper', color: 'text.primary', fontWeight: 800, height: 28, fontSize: '0.75rem', borderRadius: 1.5 }} />
-                                    <Box sx={{ width: 28, height: 28, bgcolor: 'background.paper', borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
-                                        <HeartIcon sx={{ fontSize: 16 }} />
-                                    </Box>
-                                </Box>
+                            </Box>
 
-                                {/* Bottom Badges */}
-                                <Box sx={{ position: 'absolute', bottom: 16, left: 16 }}>
-                                    <Chip icon={<ReturnIcon sx={{ fontSize: 14 }} />} label="Hover to preview Angle 2" sx={{ bgcolor: 'background.paper', backdropFilter: 'blur(4px)', color: 'text.secondary', fontWeight: 700, height: 28, fontSize: '0.75rem', borderRadius: 3, '& .MuiChip-icon': { color: 'text.secondary' } }} />
-                                </Box>
-                                <Box sx={{ position: 'absolute', bottom: 16, right: 16, display: 'flex', gap: 0.5 }}>
-                                    <Box sx={{ width: 14, height: 6, borderRadius: 3, bgcolor: (t) => t.palette.mode === 'dark' ? '#818CF8' : '#4F46E5' }} />
-                                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'divider' }} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3.5 }}>
+                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>SIZE (UK):</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                    {(formData.size.length > 0 ? formData.size : ['7', '8', '9', '10']).map((sz, i) => (
+                                        <Box key={sz} sx={{
+                                            width: 26, height: 26, borderRadius: '4px',
+                                            bgcolor: i === (formData.size.length > 0 ? formData.size.length - 1 : 2) ? '#4F46E5' : '#E2E8F0',
+                                            color: i === (formData.size.length > 0 ? formData.size.length - 1 : 2) ? '#FFFFFF' : '#64748B',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem'
+                                        }}>
+                                            {sz}
+                                        </Box>
+                                    ))}
                                 </Box>
                             </Box>
 
-                            {/* Details Area */}
-                            <Box sx={{ p: 2.5, pt: 2 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                                    <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700, letterSpacing: 0.5 }}>{formData.productId || 'NK-PULSE-26X'}</Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <StarIcon sx={{ color: '#F59E0B', fontSize: 14 }} />
-                                        <Typography variant="caption" sx={{ color: '#F59E0B', fontWeight: 800 }}>4.9</Typography>
-                                    </Box>
-                                </Box>
-
-                                <Typography variant="h5" sx={{ fontWeight: 900, color: 'text.primary', fontSize: '1.4rem', lineHeight: 1.2, mb: 0.25 }}>{formData.productName || 'Nike Air Max Pulse 2026'}</Typography>
-                                <Typography variant="caption" sx={{ color: (t) => t.palette.mode === 'dark' ? '#818CF8' : '#4F46E5', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase' }}>{formData.type || 'SNEAKERS'}</Typography>
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2.5, mb: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
-                                        <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', fontSize: '1.75rem', lineHeight: 1 }}>₹{formData.price || '0'}</Typography>
-                                        <Typography variant="body1" sx={{ color: 'text.disabled', fontWeight: 600, textDecoration: 'line-through', mb: 0.25 }}>₹{formData.price ? (Number(formData.price) * 1.18).toFixed(0) : '0'}</Typography>
-                                    </Box>
-                                    <Chip label="In Stock: 48" sx={{ bgcolor: 'rgba(5, 150, 105, 0.1)', color: (t) => t.palette.mode === 'dark' ? '#34D399' : '#059669', fontWeight: 800, height: 26, fontSize: '0.75rem', borderRadius: 1.5 }} />
-                                </Box>
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>COLOR:</Typography>
-                                        <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 800, textTransform: 'uppercase' }}>{COLOR_PALETTE.find(c => c.value === formData.color)?.name || 'CORE BLACK'}</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                        {formData.color ? (
-                                            <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: COLOR_PALETTE.find(c => c.value === formData.color)?.hex || '#000000', border: '3px solid #E0E7FF', outline: '2px solid #4F46E5', outlineOffset: -1 }} />
-                                        ) : (
-                                            <Typography variant="caption" sx={{ color: 'text.disabled' }}>Select color...</Typography>
-                                        )}
-                                    </Box>
-                                </Box>
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3.5 }}>
-                                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>SIZE (UK):</Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                        {(formData.size.length > 0 ? formData.size : ['7', '8', '9', '10']).map((sz, i) => (
-                                            <Box key={sz} sx={{ 
-                                                width: 26, height: 26, borderRadius: '4px', 
-                                                bgcolor: i === (formData.size.length > 0 ? formData.size.length - 1 : 2) ? '#4F46E5' : '#E2E8F0', 
-                                                color: i === (formData.size.length > 0 ? formData.size.length - 1 : 2) ? '#FFFFFF' : '#64748B', 
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' 
-                                            }}>
-                                                {sz}
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                </Box>
-
-                                <Button fullWidth variant="contained" startIcon={<CartIcon sx={{ fontSize: 18 }} />} sx={{ 
-                                    bgcolor: '#5E48E8', color: '#FFFFFF', py: 1.5, borderRadius: 2.5, fontWeight: 800, fontSize: '0.95rem',
-                                    textTransform: 'none', boxShadow: '0 4px 14px rgba(94, 72, 232, 0.3)',
-                                    '&:hover': { bgcolor: '#4834D4' }
-                                }}>
-                                    Add to Cart • ₹{formData.price || '0'}
-                                </Button>
-                            </Box>
-                        </Paper>
-                    </Box>
+                            <Button fullWidth variant="contained" startIcon={<CartIcon sx={{ fontSize: 18 }} />} sx={{
+                                bgcolor: '#5E48E8', color: '#FFFFFF', py: 1.5, borderRadius: 2.5, fontWeight: 800, fontSize: '0.95rem',
+                                textTransform: 'none', boxShadow: '0 4px 14px rgba(94, 72, 232, 0.3)',
+                                '&:hover': { bgcolor: '#4834D4' }
+                            }}>
+                                Add to Cart • ₹{formData.price || '0'}
+                            </Button>
+                        </Box>
+                    </Paper>
                 </Box>
+            </Box>
         </form>
     );
 }

@@ -66,10 +66,20 @@ const productModel = new mongoose.Schema({
     },
     productImage: [
         {
-            url: String,
-            tag: String // main | hover | gallery
-        }
-    ]
+            url: {
+                type: String,
+                required: true,
+            },
+            public_id: {
+                type: String,
+                default: "",
+            },
+            tag: {
+                type: String,
+                default: "gallery",
+            },
+        },
+    ],
 
 }, { timestamps: true });
 

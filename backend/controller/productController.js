@@ -1,6 +1,7 @@
 const ProductModel = require("../model/ProductModel");
 const fs = require("fs");
 const path = require("path");
+const cloudinary = require("../config/cloudinary");
 
 const addProduct = async (req, res) => {
 
@@ -13,9 +14,15 @@ const addProduct = async (req, res) => {
 
         // Map images with tags
         const images = req.files.map((file, index) => ({
-            url: file.filename,
-            tag: imageTags ? imageTags[index] : "gallery"
+            url: file.path,
+            public_id: file.filename,
+            tag: imageTags
+                ? Array.isArray(imageTags)
+                    ? imageTags[index] || "gallery"
+                    : imageTags
+                : "gallery",
         }));
+
 
         const sizesArray = Array.isArray(size) ? size : [size];
 
@@ -89,21 +96,34 @@ const updateProduct = async (req, res) => {
             specification, imageTags } = req.body;
 
         //replace image only if uploaded
+
         let images = [];
 
         if (req.body.existingImages) {
-            images = JSON.parse(req.body.existingImages);
+            try {
+                images = JSON.parse(req.body.existingImages);
+            } catch (error) {
+                return res.status(400).json({
+                    Success: false,
+                    Message: "Invalid existingImages format",
+                });
+            }
         }
 
         if (req.files && req.files.length) {
             const newImages = req.files.map((file, index) => ({
-                url: file.filename,
-                tag: imageTags
-                    ? imageTags[index]
+                url: file.path,
+                public_id: file.filename,
+                tag: req.body.imageTags
+                    ? Array.isArray(req.body.imageTags)
+                        ? req.body.imageTags[index] || "gallery"
+                        : req.body.imageTags
                     : "gallery",
             }));
+
             images = [...images, ...newImages];
         }
+
 
         let updateData = {
             productId: productId,
@@ -134,41 +154,6 @@ const updateProduct = async (req, res) => {
 }
 
 
-// const updateProduct = async (req, res) => {
-
-//     try {
-
-//         const { id } = req.params;
-
-//         const product = await ProductModel.findById(id);
-
-//         if (!product) {
-//             return res.status(400).json({ Success: false, Message: "Product not found !" });
-//         }
-
-//         const { productId, productName, price, discription, specification, category, type, color, size } = req.body;
-
-//         const updateProduct = {
-//             productId: productId,
-//             productName: productName,
-//             category: category,
-//             type: type,
-//             color: color,
-//             size: size,
-//             price: price,
-//             discription: discription,
-//             specification: specification,
-//         }
-
-//         // if (req.file) {
-//         //     if (product.image) {
-//         //         const oldPath = Path.join(__dirname, "../../media/products", product.image);
-//         //     }
-//         // }
-//     } catch (error) {
-
-//     }
-// }
 
 const deleteProduct = async (req, res) => {
     try {
@@ -182,20 +167,15 @@ const deleteProduct = async (req, res) => {
             });
         }
 
-        // Delete images from folder
-        product.productImage.forEach((img) => {
-            const imagePath = path.join(
-                __dirname,
-                "../media/products",
-                img.url
-            );
-
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
+        // Delete Cloudinary images first
+        for (const img of product.productImage || []) {
+            if (img.public_id) {
+                await cloudinary.uploader.destroy(img.public_id);
             }
-        });
+        }
 
         await ProductModel.findByIdAndDelete(id);
+
         return res.status(200).json({
             Success: true,
             Message: "Product deleted successfully",
@@ -207,6 +187,7 @@ const deleteProduct = async (req, res) => {
         });
     }
 };
+
 
 
 // Add product to featured
@@ -354,4 +335,5 @@ const removeDiscount = async (req, res) => {
 
 module.exports = {
     addProduct, getProduct, getSingleProduct, updateProduct, deleteProduct,
-    addFeaturedProduct, removeFeaturedProduct, getFeaturedProducts, addDiscount, removeDiscount};
+    addFeaturedProduct, removeFeaturedProduct, getFeaturedProducts, addDiscount, removeDiscount
+};
