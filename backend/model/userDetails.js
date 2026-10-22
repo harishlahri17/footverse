@@ -69,7 +69,6 @@ const userDetails = new mongoose.Schema({
             type: { type: String, default: "Home" },
             line1: { type: String, default: "" },
             line2: { type: String, default: "" },
-            phone: { type: String, default: "" },
             isDefault: { type: Boolean, default: false }
         }
     ],

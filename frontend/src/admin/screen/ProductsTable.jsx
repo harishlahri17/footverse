@@ -2,19 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { BaseUrl } from '../../axiosInstance';
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { 
-    Box, 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableContainer, 
-    TableHead, 
-    TableRow, 
-    TextField, 
-    Button, 
-    IconButton, 
-    Avatar, 
-    InputAdornment, 
+import {
+    Box,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+    Button,
+    IconButton,
+    Avatar,
+    InputAdornment,
     Tooltip
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -28,7 +28,7 @@ import SectionCard from '../component/mui/SectionCard';
 export default function ProductsTable() {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    
+
     const getProducts = async () => {
         try {
             const { data } = await BaseUrl.get("/get-product");
@@ -37,13 +37,13 @@ export default function ProductsTable() {
             console.log(error);
         }
     }
-    
+
     useEffect(() => {
         getProducts();
     }, []);
 
     const [search, setSearch] = useState("");
-    
+
     const filteredProducts = products.filter((item) => {
         const searchText = search.toLowerCase();
         return (
@@ -71,13 +71,13 @@ export default function ProductsTable() {
 
     return (
         <Box>
-            <PageHeader 
-                title="Product List" 
+            <PageHeader
+                title="Product List"
                 breadcrumbs={[
                     { label: 'Home', path: '/' },
                     { label: 'Products', path: '/products-table' },
                     { label: 'List' }
-                ]} 
+                ]}
             />
 
             <SectionCard>
@@ -99,9 +99,9 @@ export default function ProductsTable() {
                         }}
                     />
 
-                    <Button 
-                        variant="contained" 
-                        color="primary" 
+                    <Button
+                        variant="contained"
+                        color="primary"
                         startIcon={<AddCircleOutlineIcon />}
                         onClick={() => navigate("/add-product")}
                     >
@@ -128,22 +128,22 @@ export default function ProductsTable() {
                         </TableHead>
                         <TableBody>
                             {filteredProducts.map((item) => {
-                                const mainImage = item.productImage?.find(img => img.tag === "main");
+                                const mainImage = item.productImage?.find(img => img.tag === "main") || item.productImage?.[0];
                                 return (
                                     <TableRow key={item._id} hover>
                                         <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
                                             {item.productId}
                                         </TableCell>
                                         <TableCell>
-                                            <Avatar 
-                                                variant="rounded" 
-                                                src={`http://localhost:5000/media/products/${mainImage?.url}`} 
+                                            <Avatar
+                                                variant="rounded"
+                                                src={mainImage?.url || ""}
                                                 alt={item.productName}
-                                                sx={{ 
-                                                    width: 50, 
-                                                    height: 50, 
-                                                    transition: 'transform 0.2s ease', 
-                                                    '&:hover': { transform: 'scale(1.5)', zIndex: 1, position: 'relative' } 
+                                                sx={{
+                                                    width: 50,
+                                                    height: 50,
+                                                    transition: 'transform 0.2s ease',
+                                                    '&:hover': { transform: 'scale(1.5)', zIndex: 1, position: 'relative' }
                                                 }}
                                             />
                                         </TableCell>

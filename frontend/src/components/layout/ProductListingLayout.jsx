@@ -44,8 +44,12 @@ const colorMap = {
 
 // Map backend data to UI format
 const mapProductData = (item) => {
-  const mainImage = item.productImage?.find((img) => img.tag === "main")?.url || item.productImage?.[0]?.url;
-  const hoverImage = item.productImage?.find((img) => img.tag === "hover")?.url || item.productImage?.[1]?.url || mainImage;
+
+  const images = Array.isArray(item.productImage) ? item.productImage : [];
+
+  const mainImage = images.find((img) => img.tag === "main")?.url || images[0]?.url || "";
+
+  const hoverImage = images.find((img) => img.tag === "hover")?.url || images[1]?.url || mainImage;
   
   let discountPercent = 0;
   if (item.discount?.isDiscount) {
@@ -62,8 +66,8 @@ const mapProductData = (item) => {
   return {
     id: item._id,
     name: item.productName,
-    image: mainImage ? `http://localhost:5000/media/products/${mainImage}` : '/placeholder-shoe.png',
-    hoverImage: hoverImage ? `http://localhost:5000/media/products/${hoverImage}` : null,
+    image: mainImage ,
+    hoverImage: hoverImage ,
     rating: item.rating || 0,
     reviewsCount: item.reviewsCount || 0,
     price: item.discount?.isDiscount && item.discount.finalPrice ? item.discount.finalPrice : item.price,
@@ -956,8 +960,8 @@ export default function ProductListingLayout({
                       size={{ 
                         xs: 12, 
                         sm: view === 'grid' ? 6 : 12, 
-                        md: view === 'grid' ? 4 : 12, 
-                        lg: view === 'grid' ? 4 : 12, 
+                        md: view === 'grid' ? 3 : 12, 
+                        lg: view === 'grid' ? 3 : 12, 
                         xl: view === 'grid' ? 3 : 12 
                       }}
                       sx={{ 
@@ -965,8 +969,8 @@ export default function ProductListingLayout({
                         width: {
                           xs: '100%',
                           sm: view === 'grid' ? 'calc(50% - 8px)' : '100%',
-                          md: view === 'grid' ? 'calc(33.333% - 11px)' : '100%',
-                          lg: view === 'grid' ? 'calc(33.333% - 11px)' : '100%',
+                          md: view === 'grid' ? 'calc(25% - 12px)' : '100%',
+                          lg: view === 'grid' ? 'calc(25% - 12px)' : '100%',
                           xl: view === 'grid' ? 'calc(25% - 12px)' : '100%'
                         }
                       }}

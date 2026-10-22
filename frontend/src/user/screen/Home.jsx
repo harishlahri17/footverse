@@ -8,7 +8,7 @@ import {
   SecurityOutlined, SupportAgentOutlined, 
   ArrowBackIosNew, ArrowForwardIos, Star,
   TrendingUp, FlashOn, VerifiedOutlined, ShoppingBagOutlined,
-  PlayArrow, Pause, VolumeUp, VolumeOff
+  PlayArrow, Pause
 } from '@mui/icons-material';
 import { BaseUrl } from '../../axiosInstance';
 import { useNavigate } from 'react-router-dom';
@@ -49,19 +49,18 @@ const mapProductData = (item) => {
   };
 };
 
-// HD Video Carousel Component (Full-Width Rectangle Shape)
-const VideoHeroCarousel = () => {
+// HD Image Hero Carousel Component (Full-Width Rectangle Shape)
+const ImageHeroCarousel = () => {
   const [activeSlide, setActiveSlide] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const navigate = useNavigate();
 
   const slides = [
     {
       id: 1,
-      video: "/video/category-formal.mp4",
-      badgeTop: "• HD CINEMATIC",
+      image: "/img/hero/hero-slide-1.jpg",
+      fallbackImage: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1920&q=85",
+      badgeTop: "• NEW DROP",
       badgeSub: "⚡ PRO ATHLETIC SERIES",
       title: "Unleash Pure",
       highlight: "Speed & Power",
@@ -76,8 +75,9 @@ const VideoHeroCarousel = () => {
     },
     {
       id: 2,
-      video: "/video/category-casual.mp4",
-      badgeTop: "• HD CINEMATIC",
+      image: "/img/hero/hero-slide-2.jpg",
+      fallbackImage: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=1920&q=85",
+      badgeTop: "• EXCLUSIVE DROP",
       badgeSub: "🔥 STREETWEAR ICONS",
       title: "Step Into",
       highlight: "Better Style",
@@ -92,8 +92,9 @@ const VideoHeroCarousel = () => {
     },
     {
       id: 3,
-      video: "/video/category-mens.mp4",
-      badgeTop: "• HD CINEMATIC",
+      image: "/img/hero/hero-slide-3.jpg",
+      fallbackImage: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=1920&q=85",
+      badgeTop: "• NEXT-GEN FIT",
       badgeSub: "✨ PERFORMANCE EDITIONS",
       title: "Engineered For",
       highlight: "Maximum Agility",
@@ -111,31 +112,12 @@ const VideoHeroCarousel = () => {
   const handlePrev = () => setActiveSlide((p) => (p === 0 ? slides.length - 1 : p - 1));
   const handleNext = () => setActiveSlide((p) => (p === slides.length - 1 ? 0 : p + 1));
 
-  // Auto-advance slide every 7 seconds if playing
+  // Auto-advance slide every 6 seconds when autoplay is enabled
   useEffect(() => {
-    if (!isPlaying) return;
-    const timer = setInterval(handleNext, 7000);
+    if (!isAutoPlaying) return;
+    const timer = setInterval(handleNext, 6000);
     return () => clearInterval(timer);
-  }, [isPlaying, activeSlide]);
-
-  // Video element play/pause control
-  useEffect(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.play().catch(() => {});
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isPlaying, activeSlide]);
-
-  const togglePlay = () => {
-    setIsPlaying(prev => !prev);
-  };
-
-  const toggleMute = () => {
-    setIsMuted(prev => !prev);
-  };
+  }, [isAutoPlaying, activeSlide]);
 
   const slide = slides[activeSlide];
 
@@ -145,40 +127,51 @@ const VideoHeroCarousel = () => {
         position: 'relative', 
         width: '100%',
         height: { xs: 460, sm: 520, md: 580 },
-        borderRadius: 0, // Explicit rectangle shape as requested
+        borderRadius: 0,
         overflow: 'hidden', 
         bgcolor: '#0F172A',
         color: '#FFFFFF',
         display: 'flex',
         alignItems: 'center'
       }}
+      onMouseEnter={() => setIsAutoPlaying(false)}
+      onMouseLeave={() => setIsAutoPlaying(true)}
     >
-      {/* Background HD Video */}
-      <video
-        ref={videoRef}
-        key={slide.video}
-        src={slide.video}
-        autoPlay
-        loop
-        muted={isMuted}
-        playsInline
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 0
-        }}
-      />
+      {/* Background Hero Images with Smooth Cross-Fade and Subtle Ken-Burns Motion */}
+      {slides.map((s, idx) => (
+        <Box
+          key={s.id}
+          component="img"
+          src={s.image}
+          onError={(e) => {
+            if (s.fallbackImage && e.target.src !== s.fallbackImage) {
+              e.target.src = s.fallbackImage;
+            }
+          }}
+          alt={s.title}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            zIndex: 0,
+            opacity: activeSlide === idx ? 1 : 0,
+            transform: activeSlide === idx ? 'scale(1.04)' : 'scale(1)',
+            transition: 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 7s ease-out',
+            pointerEvents: 'none'
+          }}
+        />
+      ))}
 
-      {/* Cinematic Dark Gradient Overlay */}
+      {/* Cinematic Dark Gradient Overlay for Maximum Text Legibility */}
       <Box 
         sx={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(90deg, rgba(15, 23, 42, 0.94) 0%, rgba(15, 23, 42, 0.78) 45%, rgba(15, 23, 42, 0.35) 75%, rgba(15, 23, 42, 0.2) 100%)',
+          background: 'linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.74) 45%, rgba(15, 23, 42, 0.35) 75%, rgba(15, 23, 42, 0.2) 100%)',
           zIndex: 1
         }}
       />
@@ -310,7 +303,7 @@ const VideoHeroCarousel = () => {
 
         </Box>
 
-        {/* Floating Circular Discount Badge (matching reference design) */}
+        {/* Floating Circular Discount Badge */}
         <Box 
           sx={{ 
             position: 'absolute', 
@@ -422,7 +415,7 @@ const VideoHeroCarousel = () => {
         ))}
       </Box>
 
-      {/* Bottom-Right Play/Pause and Mute/Unmute Controls */}
+      {/* Autoplay Play/Pause Toggle Indicator */}
       <Box 
         sx={{ 
           position: 'absolute', 
@@ -430,14 +423,13 @@ const VideoHeroCarousel = () => {
           right: { xs: 16, md: 32 }, 
           display: 'flex', 
           alignItems: 'center', 
-          gap: 1, 
           zIndex: 4 
         }}
       >
-        <Tooltip title={isPlaying ? "Pause Video" : "Play Video"}>
+        <Tooltip title={isAutoPlaying ? "Pause Slideshow" : "Resume Slideshow"}>
           <IconButton
             size="small"
-            onClick={togglePlay}
+            onClick={() => setIsAutoPlaying(prev => !prev)}
             sx={{
               bgcolor: 'rgba(255, 255, 255, 0.15)',
               color: '#FFFFFF',
@@ -446,23 +438,7 @@ const VideoHeroCarousel = () => {
               '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
             }}
           >
-            {isPlaying ? <Pause sx={{ fontSize: 18 }} /> : <PlayArrow sx={{ fontSize: 18 }} />}
-          </IconButton>
-        </Tooltip>
-
-        <Tooltip title={isMuted ? "Unmute Audio" : "Mute Audio"}>
-          <IconButton
-            size="small"
-            onClick={toggleMute}
-            sx={{
-              bgcolor: 'rgba(255, 255, 255, 0.15)',
-              color: '#FFFFFF',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.3)' }
-            }}
-          >
-            {isMuted ? <VolumeOff sx={{ fontSize: 18 }} /> : <VolumeUp sx={{ fontSize: 18 }} />}
+            {isAutoPlaying ? <Pause sx={{ fontSize: 18 }} /> : <PlayArrow sx={{ fontSize: 18 }} />}
           </IconButton>
         </Tooltip>
       </Box>
@@ -567,7 +543,7 @@ export default function Home() {
             gridTemplateColumns: {
               xs: 'repeat(1, minmax(0, 1fr))',
               sm: 'repeat(2, minmax(0, 1fr))',
-              md: 'repeat(3, minmax(0, 1fr))',
+              md: 'repeat(4, minmax(0, 1fr))',
               lg: 'repeat(4, minmax(0, 1fr))'
             },
             gap: 3
@@ -592,8 +568,8 @@ export default function Home() {
   return (
     <Box sx={{ width: '100%', overflowX: 'hidden' }}>
       
-      {/* 1. Full-Width HD Video Carousel in Clean Rectangle Shape */}
-      <VideoHeroCarousel />
+      {/* 1. Full-Width HD Hero Image Slider in Clean Rectangle Shape */}
+      <ImageHeroCarousel />
 
       <Container maxWidth="xl" sx={{ pt: 6, pb: 8 }}>
         

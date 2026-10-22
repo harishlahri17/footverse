@@ -3,7 +3,7 @@ import {
   Box, Container, Typography, Avatar, 
   Button, TextField, IconButton, Radio, RadioGroup, FormControlLabel,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Breadcrumbs, Link, CircularProgress
+  Breadcrumbs, Link, CircularProgress, Checkbox
 } from '@mui/material';
 import { 
   PersonOutlined, 
@@ -25,7 +25,8 @@ import {
   BusinessOutlined, 
   NorthEast, 
   StarBorder,
-  ArrowBack
+  ArrowBack,
+  LocalPostOfficeOutlined
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../store/auth';
@@ -51,7 +52,13 @@ export default function AccountDashboard() {
     location: '',
     avatar: '',
     memberSince: '',
-    role: 'user'
+    role: 'user',
+    area: '',
+    postOffice: '',
+    city: '',
+    district: '',
+    state: '',
+    pinCode: ''
   });
 
   const [saving, setSaving] = useState(false);
@@ -64,13 +71,17 @@ export default function AccountDashboard() {
   // Address list state
   const [addresses, setAddresses] = useState([]);
 
-  // Address modal state
+  // Address modal state (strictly userDetails model)
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
     type: 'Home',
-    line1: '',
-    line2: '',
+    area: '',
+    postOffice: '',
+    city: '',
+    district: '',
+    state: '',
+    pinCode: '',
     phone: '',
     isDefault: false
   });
@@ -120,7 +131,13 @@ export default function AccountDashboard() {
             location: formattedLocation,
             avatar: u.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
             memberSince: formattedMemberSince,
-            role: u.role || 'user'
+            role: u.role || 'user',
+            area: u.area || '',
+            postOffice: u.postOffice || '',
+            city: u.city || '',
+            district: u.district || '',
+            state: u.state || '',
+            pinCode: u.pinCode || ''
           });
 
           // Populate addresses from DB if present, else fallback
@@ -200,7 +217,13 @@ export default function AccountDashboard() {
           gender: u.gender || 'Male',
           bio: u.bio || 'Fashion enthusiast and sneaker lover. Always exploring the best footwear for a better lifestyle.',
           location: u.city ? `${u.city}, ${u.state}` : prev.location,
-          avatar: u.image || prev.avatar
+          avatar: u.image || prev.avatar,
+          area: u.area || '',
+          postOffice: u.postOffice || '',
+          city: u.city || '',
+          district: u.district || '',
+          state: u.state || '',
+          pinCode: u.pinCode || ''
         }));
         toast.info('Profile reset to original saved values');
       }
@@ -221,6 +244,12 @@ export default function AccountDashboard() {
         gender: formData.gender,
         bio: formData.bio,
         image: formData.avatar,
+        area: formData.area,
+        postOffice: formData.postOffice,
+        city: formData.city,
+        district: formData.district,
+        state: formData.state,
+        pinCode: formData.pinCode,
         addresses: addresses
       };
 
@@ -248,14 +277,18 @@ export default function AccountDashboard() {
     }
   };
 
-  // Address Operations (persisted)
+  // Address Operations (persisted strictly according to userDetails model)
   const handleOpenAddressModal = (addr = null) => {
     if (addr) {
       setEditingAddress(addr);
       setAddressForm({
         type: addr.type || 'Home',
-        line1: addr.line1 || '',
-        line2: addr.line2 || '',
+        area: addr.area || addr.line1 || '',
+        postOffice: addr.postOffice || '',
+        city: addr.city || '',
+        district: addr.district || '',
+        state: addr.state || '',
+        pinCode: addr.pinCode || '',
         phone: addr.phone || formData.phone,
         isDefault: !!addr.isDefault
       });
@@ -263,8 +296,12 @@ export default function AccountDashboard() {
       setEditingAddress(null);
       setAddressForm({
         type: 'Home',
-        line1: '',
-        line2: '',
+        area: '',
+        postOffice: '',
+        city: '',
+        district: '',
+        state: '',
+        pinCode: '',
         phone: formData.phone,
         isDefault: addresses.length === 0
       });
@@ -273,23 +310,32 @@ export default function AccountDashboard() {
   };
 
   const handleSaveAddress = async () => {
-    if (!addressForm.line1 || !addressForm.line2) {
-      toast.error('Please enter complete address details');
+    if (!addressForm.area || !addressForm.city || !addressForm.state || !addressForm.pinCode) {
+      toast.error('Please enter complete address details (Area, City, State, PIN Code)');
       return;
     }
+
+    const formattedLine1 = addressForm.area;
+    const formattedLine2 = `${addressForm.postOffice ? addressForm.postOffice + ', ' : ''}${addressForm.city}${addressForm.district ? ', ' + addressForm.district : ''}, ${addressForm.state} - ${addressForm.pinCode}`;
+
+    const newAddressItem = {
+      ...addressForm,
+      line1: formattedLine1,
+      line2: formattedLine2
+    };
 
     let updatedList = [];
     if (editingAddress) {
       updatedList = addresses.map(a => 
         (a._id === editingAddress._id || a.id === editingAddress.id) 
-          ? { ...a, ...addressForm } 
+          ? { ...a, ...newAddressItem } 
           : addressForm.isDefault ? { ...a, isDefault: false } : a
       );
       toast.success('Address updated!');
     } else {
       const newAddr = {
         id: Date.now(),
-        ...addressForm
+        ...newAddressItem
       };
       if (newAddr.isDefault) {
         updatedList = addresses.map(a => ({ ...a, isDefault: false })).concat(newAddr);
@@ -302,9 +348,20 @@ export default function AccountDashboard() {
     setAddresses(updatedList);
     setAddressModalOpen(false);
 
-    // Save to backend
+    // Save to backend and sync default address to userDetails profile
     try {
-      await BaseUrl.put('/user/update-profile', { addresses: updatedList });
+      await BaseUrl.put('/user/update-profile', { 
+        addresses: updatedList,
+        ...(addressForm.isDefault ? {
+          area: addressForm.area,
+          postOffice: addressForm.postOffice,
+          city: addressForm.city,
+          district: addressForm.district,
+          state: addressForm.state,
+          pinCode: addressForm.pinCode,
+          phone: addressForm.phone
+        } : {})
+      });
     } catch (e) {
       console.log('Address saved locally');
     }
@@ -917,6 +974,179 @@ export default function AccountDashboard() {
                       </Typography>
                     </Box>
 
+                    {/* Profile Address (According to userDetails model) */}
+                    <Box sx={{ mb: 3.5, pt: 2, borderTop: '1px dashed #E5E7EB' }}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography sx={{ fontWeight: 700, color: '#111827', fontSize: '1rem', letterSpacing: '-0.01em' }}>
+                          Profile Address
+                        </Typography>
+                        <Typography sx={{ color: '#6B7280', fontSize: '0.82rem', mt: 0.2 }}>
+                          Your primary address details saved in your profile
+                        </Typography>
+                      </Box>
+
+                      <Box 
+                        sx={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+                          gap: 2.2 
+                        }}
+                      >
+                        {/* Area / Apartment / Street / Landmark */}
+                        <Box sx={{ gridColumn: { sm: 'span 2' } }}>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                            Area / Apartment / Street / Landmark
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={formData.area || ''}
+                            onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                            placeholder="House/Flat No., Building, Street, Landmark"
+                            InputProps={{
+                              startAdornment: (
+                                <HomeOutlined sx={{ color: '#9CA3AF', fontSize: 19, mr: 1.2 }} />
+                              ),
+                              sx: {
+                                borderRadius: '9px',
+                                bgcolor: '#FFFFFF',
+                                fontSize: '0.9rem',
+                                '& fieldset': { borderColor: '#E5E7EB' },
+                                '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                '&.Mui-focused fieldset': { borderColor: '#111827' }
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* Post Office */}
+                        <Box>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                            Post Office
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={formData.postOffice || ''}
+                            onChange={(e) => setFormData({ ...formData, postOffice: e.target.value })}
+                            placeholder="Enter Post Office"
+                            InputProps={{
+                              startAdornment: (
+                                <LocalPostOfficeOutlined sx={{ color: '#9CA3AF', fontSize: 19, mr: 1.2 }} />
+                              ),
+                              sx: {
+                                borderRadius: '9px',
+                                bgcolor: '#FFFFFF',
+                                fontSize: '0.9rem',
+                                '& fieldset': { borderColor: '#E5E7EB' },
+                                '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                '&.Mui-focused fieldset': { borderColor: '#111827' }
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* City / Town */}
+                        <Box>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                            City / Town
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={formData.city || ''}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            placeholder="Enter City / Town"
+                            InputProps={{
+                              sx: {
+                                borderRadius: '9px',
+                                bgcolor: '#FFFFFF',
+                                fontSize: '0.9rem',
+                                '& fieldset': { borderColor: '#E5E7EB' },
+                                '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                '&.Mui-focused fieldset': { borderColor: '#111827' }
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* District */}
+                        <Box>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                            District
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={formData.district || ''}
+                            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                            placeholder="Enter District"
+                            InputProps={{
+                              sx: {
+                                borderRadius: '9px',
+                                bgcolor: '#FFFFFF',
+                                fontSize: '0.9rem',
+                                '& fieldset': { borderColor: '#E5E7EB' },
+                                '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                '&.Mui-focused fieldset': { borderColor: '#111827' }
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* State */}
+                        <Box>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                            State
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={formData.state || ''}
+                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                            placeholder="Enter State"
+                            InputProps={{
+                              sx: {
+                                borderRadius: '9px',
+                                bgcolor: '#FFFFFF',
+                                fontSize: '0.9rem',
+                                '& fieldset': { borderColor: '#E5E7EB' },
+                                '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                '&.Mui-focused fieldset': { borderColor: '#111827' }
+                              }
+                            }}
+                          />
+                        </Box>
+
+                        {/* PIN Code */}
+                        <Box sx={{ gridColumn: { sm: 'span 2' } }}>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                            PIN Code
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={formData.pinCode || ''}
+                            onChange={(e) => setFormData({ ...formData, pinCode: e.target.value })}
+                            placeholder="Enter 6-digit PIN code"
+                            InputProps={{
+                              startAdornment: (
+                                <LocationOnOutlined sx={{ color: '#9CA3AF', fontSize: 19, mr: 1.2 }} />
+                              ),
+                              sx: {
+                                borderRadius: '9px',
+                                bgcolor: '#FFFFFF',
+                                fontSize: '0.9rem',
+                                '& fieldset': { borderColor: '#E5E7EB' },
+                                '&:hover fieldset': { borderColor: '#CBD5E1' },
+                                '&.Mui-focused fieldset': { borderColor: '#111827' }
+                              }
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+
                     {/* Actions: Reset & Save Changes Side-by-Side */}
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                       {/* Reset Button */}
@@ -1432,10 +1662,10 @@ export default function AccountDashboard() {
         <DialogTitle sx={{ fontWeight: 700, color: '#111827' }}>
           {editingAddress ? 'Edit Address' : 'Add New Address'}
         </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+        <DialogContent dividers sx={{ py: 2.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', mb: 0.8 }}>Address Type</Typography>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>Address Type</Typography>
               <RadioGroup
                 row
                 value={addressForm.type}
@@ -1446,35 +1676,120 @@ export default function AccountDashboard() {
                 <FormControlLabel value="Other" control={<Radio size="small" sx={{ '&.Mui-checked': { color: '#111827' } }} />} label="Other" />
               </RadioGroup>
             </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', mb: 0.8 }}>Street / Building / Flat</Typography>
-              <TextField 
-                fullWidth 
-                size="small" 
-                value={addressForm.line1} 
-                onChange={(e) => setAddressForm({ ...addressForm, line1: e.target.value })}
-                placeholder="#123, 5th Cross, MG Road" 
-              />
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  Contact Phone <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.phone} 
+                  onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                  placeholder="+91 98765 43210" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  Area / Apartment / Landmark <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.area} 
+                  onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
+                  placeholder="Flat, House no., Area, Landmark" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  Post Office <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.postOffice} 
+                  onChange={(e) => setAddressForm({ ...addressForm, postOffice: e.target.value })}
+                  placeholder="Enter Post Office" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  City / Town <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.city} 
+                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                  placeholder="Enter City / Town" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  District <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.district} 
+                  onChange={(e) => setAddressForm({ ...addressForm, district: e.target.value })}
+                  placeholder="Enter District" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  State <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.state} 
+                  onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                  placeholder="Enter State" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                  PIN Code <Box component="span" sx={{ color: '#EF4444' }}>*</Box>
+                </Typography>
+                <TextField 
+                  fullWidth 
+                  size="small" 
+                  value={addressForm.pinCode} 
+                  onChange={(e) => setAddressForm({ ...addressForm, pinCode: e.target.value })}
+                  placeholder="Enter 6-digit PIN code" 
+                  sx={{ '& fieldset': { borderRadius: '8px' } }}
+                />
+              </Box>
             </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', mb: 0.8 }}>City, State & Pin Code</Typography>
-              <TextField 
-                fullWidth 
-                size="small" 
-                value={addressForm.line2} 
-                onChange={(e) => setAddressForm({ ...addressForm, line2: e.target.value })}
-                placeholder="Bengaluru, Karnataka - 560001" 
+
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <Checkbox 
+                checked={!!addressForm.isDefault}
+                onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                size="small"
+                sx={{ p: 0.5, color: '#9CA3AF', '&.Mui-checked': { color: '#111827' } }}
               />
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', mb: 0.8 }}>Contact Phone</Typography>
-              <TextField 
-                fullWidth 
-                size="small" 
-                value={addressForm.phone} 
-                onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
-                placeholder="+91 98765 43210" 
-              />
+              <Typography 
+                sx={{ fontSize: '0.82rem', color: '#4B5563', ml: 0.5, cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => setAddressForm({ ...addressForm, isDefault: !addressForm.isDefault })}
+              >
+                Set as default delivery address
+              </Typography>
             </Box>
           </Box>
         </DialogContent>

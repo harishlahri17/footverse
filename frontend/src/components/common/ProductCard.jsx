@@ -114,7 +114,7 @@ export default function ProductCard({ product, onLike, onClick, onAddToCart, onQ
       <Box 
         sx={{ 
           width: '100%',
-          height: 220, 
+          height: 200, 
           position: 'relative',
           overflow: 'hidden',
           bgcolor: '#F9FAFB',
@@ -220,33 +220,35 @@ export default function ProductCard({ product, onLike, onClick, onAddToCart, onQ
       </Box>
 
       {/* Card Content Area */}
-      <Box sx={{ p: 1.75, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+      <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
         
         {/* Title and Rating Row */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.35 }}>
           <Typography 
             variant="h6" 
             sx={{ 
               fontWeight: 700, 
-              fontSize: '0.96rem', 
+              fontSize: '0.92rem', 
               color: '#111827',
               lineHeight: 1.25,
               overflow: 'hidden', 
               textOverflow: 'ellipsis', 
               whiteSpace: 'nowrap',
-              maxWidth: '65%'
+              flex: 1,
+              minWidth: 0,
+              mr: 1
             }}
           >
             {name || 'Shoe'}
           </Typography>
 
           {/* Rating */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
-            <Star sx={{ color: '#F59E0B', fontSize: 16 }} />
-            <Typography sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.825rem' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.35, flexShrink: 0 }}>
+            <Star sx={{ color: '#F59E0B', fontSize: 15 }} />
+            <Typography sx={{ fontWeight: 700, color: '#1F2937', fontSize: '0.8rem' }}>
               {displayRating}
             </Typography>
-            <Typography sx={{ color: '#6B7280', fontSize: '0.78rem', fontWeight: 500 }}>
+            <Typography sx={{ color: '#6B7280', fontSize: '0.74rem', fontWeight: 500 }}>
               ({displayReviews})
             </Typography>
           </Box>
@@ -257,21 +259,21 @@ export default function ProductCard({ product, onLike, onClick, onAddToCart, onQ
           sx={{ 
             color: '#6B7280', 
             fontWeight: 500, 
-            fontSize: '0.82rem', 
-            mb: 1.2 
+            fontSize: '0.8rem', 
+            mb: 1 
           }}
         >
           {brand || 'FootVerse'}
         </Typography>
 
         {/* Color Swatches */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, mb: 1.3, minHeight: 18 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 1.1, minHeight: 16 }}>
           {visibleSwatches.map((col, idx) => (
             <Box 
               key={idx}
               sx={{ 
-                width: 12, 
-                height: 12, 
+                width: 11, 
+                height: 11, 
                 borderRadius: '50%', 
                 bgcolor: resolveColor(col),
                 border: col === '#FFFFFF' || col === 'white' ? '1px solid #D1D5DB' : 'none',
@@ -280,20 +282,20 @@ export default function ProductCard({ product, onLike, onClick, onAddToCart, onQ
             />
           ))}
           {remainingColorCount > 0 && (
-            <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', fontWeight: 500, ml: 0.2 }}>
+            <Typography sx={{ color: '#6B7280', fontSize: '0.72rem', fontWeight: 500, ml: 0.2 }}>
               +{remainingColorCount}
             </Typography>
           )}
         </Box>
 
         {/* Price Row: Current Price, Original Price, Discount Pill */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.75, flexWrap: 'wrap', minHeight: 28 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#111827' }}>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.8, mb: 1.5, flexWrap: 'wrap', minHeight: 26 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#111827' }}>
             ₹{Number(price || 0).toLocaleString()}
           </Typography>
 
           {originalPrice && originalPrice > price && (
-            <Typography sx={{ color: '#9CA3AF', textDecoration: 'line-through', fontSize: '0.78rem', fontWeight: 500 }}>
+            <Typography sx={{ color: '#9CA3AF', textDecoration: 'line-through', fontSize: '0.76rem', fontWeight: 500 }}>
               ₹{originalPrice?.toLocaleString()}
             </Typography>
           )}
@@ -304,10 +306,10 @@ export default function ProductCard({ product, onLike, onClick, onAddToCart, onQ
                 bgcolor: '#FEE2E2', 
                 color: '#EF4444', 
                 fontWeight: 700, 
-                fontSize: '0.72rem', 
+                fontSize: '0.7rem', 
                 borderRadius: '4px', 
-                px: 0.6, 
-                py: 0.15,
+                px: 0.5, 
+                py: 0.1,
                 display: 'inline-flex',
                 alignItems: 'center'
               }}
@@ -325,16 +327,16 @@ export default function ProductCard({ product, onLike, onClick, onAddToCart, onQ
             e.stopPropagation();
             onAddToCart && onAddToCart(product);
           }}
-          startIcon={<ShoppingCartOutlined sx={{ fontSize: 17 }} />}
+          startIcon={<ShoppingCartOutlined sx={{ fontSize: 16 }} />}
           sx={{
             mt: 'auto',
             bgcolor: '#1E293B',
             color: '#FFFFFF',
             textTransform: 'none',
             fontWeight: 600,
-            fontSize: '0.85rem',
+            fontSize: '0.82rem',
             borderRadius: '6px',
-            py: 0.85,
+            py: 0.75,
             boxShadow: 'none',
             transition: 'all 0.15s ease',
             '&:hover': {

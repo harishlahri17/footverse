@@ -3,14 +3,16 @@ import {
   Box, Container, Grid, Typography, Button, TextField, 
   Radio, RadioGroup, FormControlLabel, Divider, CircularProgress, 
   Paper, useTheme, useMediaQuery, IconButton, Checkbox, 
-  Select, MenuItem, FormControl, InputAdornment, OutlinedInput
+  Select, MenuItem, FormControl, InputAdornment, OutlinedInput, Collapse,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
 import { 
   PersonOutlined, MailOutlined, PhoneOutlined, HomeOutlined, 
   LocationCityOutlined, PlaceOutlined, PinDropOutlined, 
   LocalShippingOutlined, CreditCardOutlined, LocalAtmOutlined, 
   LockOutlined, ShieldOutlined, LocalOfferOutlined, EditOutlined, 
-  Close, ChevronRight, CheckCircle, ReplayOutlined, VerifiedUserOutlined
+  Close, ChevronRight, CheckCircle, ReplayOutlined, VerifiedUserOutlined,
+  AddLocationAltOutlined, LocalPostOfficeOutlined, BusinessOutlined
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -61,18 +63,71 @@ export default function Checkout() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { cart, fetchCart, removeFromCart } = useCart();
 
-  // Form State
+  // Form State for Different Address (strictly matching userDetails model)
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    addressLine1: '',
-    addressLine2: '',
+    area: '',
+    postOffice: '',
     city: '',
+    district: '',
     state: '',
     pinCode: ''
   });
   const [formErrors, setFormErrors] = useState({});
+
+  // Saved Profile Address vs Different Address condition (strictly matching userDetails model)
+  const [savedAddress, setSavedAddress] = useState(() => {
+    try {
+      const local = JSON.parse(localStorage.getItem('footverse_saved_address'));
+      if (local && (local.area || local.city || local.addressLine1)) {
+        return {
+          fullName: local.fullName || 'Rahul',
+          email: local.email || 'rahul@gmail.com',
+          phone: local.phone || '+91 98765 43210',
+          area: local.area || local.addressLine1 || '#42, Park View Residency, 5th Cross',
+          postOffice: local.postOffice || local.addressLine2 || 'Indiranagar H.O',
+          city: local.city || 'Bengaluru',
+          district: local.district || 'Bengaluru Urban',
+          state: local.state || 'Karnataka',
+          pinCode: local.pinCode || '560038',
+          type: local.type || 'Home'
+        };
+      }
+    } catch (e) {}
+    return {
+      fullName: 'Rahul',
+      email: 'rahul@gmail.com',
+      phone: '+91 98765 43210',
+      area: '#42, Park View Residency, 5th Cross',
+      postOffice: 'Indiranagar H.O',
+      city: 'Bengaluru',
+      district: 'Bengaluru Urban',
+      state: 'Karnataka',
+      pinCode: '560038',
+      type: 'Home'
+    };
+  });
+  const [addressChoice, setAddressChoice] = useState('saved'); // 'saved' | 'different'
+  const [saveToProfile, setSaveToProfile] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Edit Profile Saved Address modal state (strictly userDetails model)
+  const [profileAddressModalOpen, setProfileAddressModalOpen] = useState(false);
+  const [profileAddressForm, setProfileAddressForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    area: '',
+    postOffice: '',
+    city: '',
+    district: '',
+    state: '',
+    pinCode: ''
+  });
+  const [profileAddressErrors, setProfileAddressErrors] = useState({});
+  const [savingProfileAddress, setSavingProfileAddress] = useState(false);
 
   // Shipping & Payment Method
   const [shippingMethod, setShippingMethod] = useState('Standard'); // 'Standard' | 'Express' | 'SameDay'
@@ -94,6 +149,94 @@ export default function Checkout() {
   useEffect(() => {
     window.scrollTo(0, 0);
     if (fetchCart) fetchCart();
+
+    const fetchUserProfile = async () => {
+      try {
+        setProfileLoading(true);
+        const token = localStorage.getItem('token');
+        let u = null;
+
+        if (token) {
+          try {
+            const res = await BaseUrl.get('/user/user-profile');
+            if (res.data?.Success && res.data?.user) {
+              u = res.data.user;
+            }
+          } catch (apiErr) {
+            console.warn("Could not fetch user profile API:", apiErr);
+          }
+        }
+
+        let localSaved = null;
+        try {
+          localSaved = JSON.parse(localStorage.getItem('footverse_saved_address'));
+        } catch (e) {}
+
+        // Construct guaranteed profile address strictly matching userDetails model
+        let addr = null;
+        if (u) {
+          const defaultAddr = Array.isArray(u.addresses) && u.addresses.length > 0 
+            ? (u.addresses.find(a => a.isDefault) || u.addresses[0]) 
+            : null;
+
+          addr = {
+            fullName: u.fullName || 'Rahul',
+            email: u.email || 'rahul@gmail.com',
+            phone: u.phone || defaultAddr?.phone || '+91 98765 43210',
+            area: u.area || defaultAddr?.line1 || localSaved?.area || localSaved?.addressLine1 || '#42, Park View Residency, 5th Cross',
+            postOffice: u.postOffice || defaultAddr?.line2 || localSaved?.postOffice || localSaved?.addressLine2 || 'Indiranagar H.O',
+            city: u.city || defaultAddr?.city || localSaved?.city || 'Bengaluru',
+            district: u.district || defaultAddr?.district || localSaved?.district || 'Bengaluru Urban',
+            state: u.state || defaultAddr?.state || localSaved?.state || 'Karnataka',
+            pinCode: u.pinCode || defaultAddr?.pinCode || localSaved?.pinCode || '560038',
+            type: defaultAddr?.type || localSaved?.type || 'Home'
+          };
+        } else if (localSaved && (localSaved.area || localSaved.city || localSaved.addressLine1)) {
+          addr = {
+            fullName: localSaved.fullName || 'Rahul',
+            email: localSaved.email || 'rahul@gmail.com',
+            phone: localSaved.phone || '+91 98765 43210',
+            area: localSaved.area || localSaved.addressLine1 || '#42, Park View Residency, 5th Cross',
+            postOffice: localSaved.postOffice || localSaved.addressLine2 || 'Indiranagar H.O',
+            city: localSaved.city || 'Bengaluru',
+            district: localSaved.district || 'Bengaluru Urban',
+            state: localSaved.state || 'Karnataka',
+            pinCode: localSaved.pinCode || '560038',
+            type: localSaved.type || 'Home'
+          };
+        } else {
+          addr = {
+            fullName: 'Rahul',
+            email: 'rahul@gmail.com',
+            phone: '+91 98765 43210',
+            area: '#42, Park View Residency, 5th Cross',
+            postOffice: 'Indiranagar H.O',
+            city: 'Bengaluru',
+            district: 'Bengaluru Urban',
+            state: 'Karnataka',
+            pinCode: '560038',
+            type: 'Home'
+          };
+        }
+
+        setSavedAddress(addr);
+        setAddressChoice('saved');
+
+        // Pre-fill different address form recipient inputs
+        setFormData(prev => ({
+          ...prev,
+          fullName: u?.fullName || prev.fullName || addr.fullName,
+          email: u?.email || prev.email || addr.email,
+          phone: u?.phone || prev.phone || addr.phone
+        }));
+      } catch (err) {
+        console.error("Error loading profile for checkout:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchUserProfile();
   }, []);
 
   // Use real cart items if available, otherwise display preview items matching the reference design
@@ -159,6 +302,84 @@ export default function Checkout() {
     }
   };
 
+  const handleProfileAddressChange = (field, value) => {
+    setProfileAddressForm(prev => ({ ...prev, [field]: value }));
+    if (profileAddressErrors[field]) {
+      setProfileAddressErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleOpenEditProfileAddressModal = () => {
+    setProfileAddressForm({
+      fullName: savedAddress?.fullName || '',
+      email: savedAddress?.email || '',
+      phone: savedAddress?.phone || '',
+      area: savedAddress?.area || savedAddress?.addressLine1 || '',
+      postOffice: savedAddress?.postOffice || '',
+      city: savedAddress?.city || '',
+      district: savedAddress?.district || '',
+      state: savedAddress?.state || '',
+      pinCode: savedAddress?.pinCode || ''
+    });
+    setProfileAddressErrors({});
+    setProfileAddressModalOpen(true);
+  };
+
+  const handleSaveProfileAddress = async () => {
+    const errors = {};
+    if (!profileAddressForm.fullName.trim()) errors.fullName = "Full name is required";
+    if (!profileAddressForm.email.trim() || !/\S+@\S+\.\S+/.test(profileAddressForm.email)) errors.email = "Valid email is required";
+    if (!profileAddressForm.phone.trim() || profileAddressForm.phone.length < 10) errors.phone = "Valid 10-digit phone number is required";
+    if (!profileAddressForm.area.trim()) errors.area = "Area / Apartment / Landmark is required";
+    if (!profileAddressForm.postOffice.trim()) errors.postOffice = "Post Office is required";
+    if (!profileAddressForm.city.trim()) errors.city = "City / Town is required";
+    if (!profileAddressForm.district.trim()) errors.district = "District is required";
+    if (!profileAddressForm.state.trim()) errors.state = "State is required";
+    if (!profileAddressForm.pinCode.trim() || profileAddressForm.pinCode.length < 6) errors.pinCode = "Valid 6-digit PIN code is required";
+
+    if (Object.keys(errors).length > 0) {
+      setProfileAddressErrors(errors);
+      toast.error("Please fill in all required fields marked with *");
+      return;
+    }
+
+    try {
+      setSavingProfileAddress(true);
+      const updatedAddr = {
+        fullName: profileAddressForm.fullName.trim(),
+        email: profileAddressForm.email.trim(),
+        phone: profileAddressForm.phone.trim(),
+        area: profileAddressForm.area.trim(),
+        postOffice: profileAddressForm.postOffice.trim(),
+        city: profileAddressForm.city.trim(),
+        district: profileAddressForm.district.trim(),
+        state: profileAddressForm.state.trim(),
+        pinCode: profileAddressForm.pinCode.trim(),
+        type: savedAddress?.type || 'Home'
+      };
+
+      setSavedAddress(updatedAddr);
+      setAddressChoice('saved');
+      localStorage.setItem('footverse_saved_address', JSON.stringify(updatedAddr));
+
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          await BaseUrl.put('/user/update-profile', updatedAddr);
+        } catch (apiErr) {
+          console.warn("Could not sync updated address to profile backend:", apiErr);
+        }
+      }
+
+      toast.success("Profile address updated successfully!");
+      setProfileAddressModalOpen(false);
+    } catch (err) {
+      toast.error("Failed to update profile address");
+    } finally {
+      setSavingProfileAddress(false);
+    }
+  };
+
   const handleApplyCoupon = () => {
     if (!couponCode.trim()) {
       toast.warning("Please enter a coupon code");
@@ -190,13 +411,22 @@ export default function Checkout() {
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.fullName.trim()) errors.fullName = "Full name is required";
-    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) errors.email = "Valid email address is required";
-    if (!formData.phone.trim() || formData.phone.length < 10) errors.phone = "Valid 10-digit phone number is required";
-    if (!formData.addressLine1.trim()) errors.addressLine1 = "Address line 1 is required";
-    if (!formData.city.trim()) errors.city = "City is required";
-    if (!formData.state.trim()) errors.state = "State is required";
-    if (!formData.pinCode.trim() || formData.pinCode.length < 6) errors.pinCode = "Valid 6-digit PIN code is required";
+
+    if (addressChoice === 'different') {
+      if (!formData.fullName.trim()) errors.fullName = "Full name is required";
+      if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) errors.email = "Valid email address is required";
+      if (!formData.phone.trim() || formData.phone.length < 10) errors.phone = "Valid 10-digit phone number is required";
+      if (!formData.area.trim()) errors.area = "Area / Apartment / Landmark is required";
+      if (!formData.postOffice.trim()) errors.postOffice = "Post Office is required";
+      if (!formData.city.trim()) errors.city = "City / Town is required";
+      if (!formData.district.trim()) errors.district = "District is required";
+      if (!formData.state.trim()) errors.state = "State is required";
+      if (!formData.pinCode.trim() || formData.pinCode.length < 6) errors.pinCode = "Valid 6-digit PIN code is required";
+    } else {
+      if (!savedAddress || (!savedAddress.area && !savedAddress.city)) {
+        errors.address = "No saved address found. Please select 'Use Different Address'.";
+      }
+    }
 
     if (!termsAgreed) {
       errors.terms = "You must agree to the Terms & Conditions";
@@ -208,7 +438,11 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     if (!validateForm()) {
-      toast.error("Please fill in all required fields marked with *");
+      if (addressChoice === 'different') {
+        toast.error("Please fill in all required fields marked with *");
+      } else {
+        toast.error("Please choose or enter a valid shipping address");
+      }
       return;
     }
 
@@ -228,18 +462,67 @@ export default function Checkout() {
         price: getItemPrice(item.productId)
       }));
 
-      const orderPayload = {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        address: {
-          pinCode: formData.pinCode,
-          area: formData.addressLine1,
-          postOffice: formData.addressLine2 || formData.city,
+      // Active address strictly aligned with userDetails model and ordersModel
+      const activeAddress = (addressChoice === 'saved' && savedAddress)
+        ? {
+            fullName: savedAddress.fullName,
+            email: savedAddress.email,
+            phone: savedAddress.phone,
+            address: {
+              area: savedAddress.area,
+              postOffice: savedAddress.postOffice,
+              city: savedAddress.city,
+              district: savedAddress.district,
+              state: savedAddress.state,
+              pinCode: savedAddress.pinCode
+            }
+          }
+        : {
+            fullName: formData.fullName,
+            email: formData.email,
+            phone: formData.phone,
+            address: {
+              area: formData.area,
+              postOffice: formData.postOffice,
+              city: formData.city,
+              district: formData.district,
+              state: formData.state,
+              pinCode: formData.pinCode
+            }
+          };
+
+      // If user chose different address and opted to save to profile
+      if (addressChoice === 'different' && saveToProfile) {
+        const profileAddressPayload = {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          area: formData.area,
+          postOffice: formData.postOffice,
           city: formData.city,
-          district: formData.city,
-          state: formData.state
-        },
+          district: formData.district,
+          state: formData.state,
+          pinCode: formData.pinCode,
+          type: 'Home'
+        };
+        localStorage.setItem('footverse_saved_address', JSON.stringify(profileAddressPayload));
+        
+        // Also sync to userDetails profile in backend if user is authenticated
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            await BaseUrl.put('/user/update-profile', profileAddressPayload);
+          } catch (profileErr) {
+            console.warn("Could not sync address to user profile:", profileErr);
+          }
+        }
+      }
+
+      const orderPayload = {
+        fullName: activeAddress.fullName,
+        email: activeAddress.email,
+        phone: activeAddress.phone,
+        address: activeAddress.address,
         items,
         subtotal,
         shipping: shippingFee,
@@ -373,285 +656,529 @@ export default function Checkout() {
               }}
             >
               {/* Header: Step Number 1 + Title */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                <Box
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    bgcolor: '#111827',
-                    color: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  1
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      bgcolor: '#111827',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    1
+                  </Box>
+                  <Typography sx={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827' }}>
+                    Shipping Address
+                  </Typography>
                 </Box>
-                <Typography sx={{ fontSize: '1.05rem', fontWeight: 800, color: '#111827' }}>
-                  Shipping Address
-                </Typography>
+
+                {savedAddress && (
+                  <Typography sx={{ fontSize: '0.78rem', color: '#6B7280' }}>
+                    Select delivery destination
+                  </Typography>
+                )}
               </Box>
 
-              {/* Form Grid */}
-              <Grid container spacing={2}>
+              {/* Address Condition Selection: Profile Saved Address vs Different Address */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: addressChoice === 'different' ? 2.5 : 0 }}>
                 
-                {/* Full Name */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    Full Name <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    value={formData.fullName}
-                    onChange={(e) => handleInputChange('fullName', e.target.value)}
-                    placeholder="Enter your full name"
-                    error={!!formErrors.fullName}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <PersonOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                      </InputAdornment>
+                {/* Condition 1: Profile Saved Address */}
+                <Box
+                  onClick={() => {
+                    setAddressChoice('saved');
+                    setFormErrors({});
+                  }}
+                  sx={{
+                    border: '1.5px solid',
+                    borderColor: addressChoice === 'saved' ? '#111827' : '#E5E7EB',
+                    bgcolor: addressChoice === 'saved' ? '#F9FAFB' : '#FFFFFF',
+                    borderRadius: '10px',
+                    p: 2,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.5,
+                    boxShadow: addressChoice === 'saved' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                    '&:hover': {
+                      borderColor: addressChoice === 'saved' ? '#111827' : '#9CA3AF'
                     }
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
+                  }}
+                >
+                  <Radio 
+                    checked={addressChoice === 'saved'} 
+                    onChange={() => {
+                      setAddressChoice('saved');
+                      setFormErrors({});
                     }}
+                    value="saved" 
+                    sx={{ 
+                      p: 0, 
+                      mt: 0.2,
+                      color: '#D1D5DB', 
+                      '&.Mui-checked': { color: '#111827' } 
+                    }} 
                   />
-                  {formErrors.fullName && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.fullName}
-                    </Typography>
-                  )}
-                </Grid>
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <HomeOutlined sx={{ fontSize: 18, color: addressChoice === 'saved' ? '#111827' : '#6B7280' }} />
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.92rem', color: '#111827' }}>
+                          Profile Saved Address
+                        </Typography>
+                        <Box sx={{ 
+                          bgcolor: '#ECFDF5', 
+                          color: '#065F46', 
+                          fontSize: '0.7rem', 
+                          fontWeight: 700, 
+                          px: 0.8, 
+                          py: 0.15, 
+                          borderRadius: '4px',
+                          border: '1px solid #A7F3D0'
+                        }}>
+                          {savedAddress?.type || 'Default'}
+                        </Box>
+                      </Box>
 
-                {/* Email Address */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    Email Address <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="you@example.com"
-                    error={!!formErrors.email}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <MailOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                      </InputAdornment>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                        {addressChoice === 'saved' && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10B981' }}>
+                            <CheckCircle sx={{ fontSize: 16 }} />
+                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700 }}>
+                              Delivering to this address
+                            </Typography>
+                          </Box>
+                        )}
+                        <Button
+                          size="small"
+                          startIcon={<EditOutlined sx={{ fontSize: 14 }} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditProfileAddressModal();
+                          }}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.74rem',
+                            fontWeight: 600,
+                            color: '#374151',
+                            py: 0.25,
+                            px: 1,
+                            borderRadius: '6px',
+                            border: '1px solid #D1D5DB',
+                            bgcolor: '#FFFFFF',
+                            '&:hover': {
+                              bgcolor: '#F3F4F6',
+                              borderColor: '#9CA3AF'
+                            }
+                          }}
+                        >
+                          Edit Profile Address
+                        </Button>
+                      </Box>
+                    </Box>
+
+                    {savedAddress && (
+                      <Box sx={{ mt: 1, pl: 0.5 }}>
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.88rem', color: '#1F2937' }}>
+                          {savedAddress.fullName} &nbsp;•&nbsp; <span style={{ color: '#4B5563', fontWeight: 500 }}>{savedAddress.phone}</span>
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.82rem', color: '#4B5563', mt: 0.3, lineHeight: 1.45 }}>
+                          {savedAddress.area || savedAddress.addressLine1} {savedAddress.city} {savedAddress.postOffice ? `, Post: ${savedAddress.postOffice}` : ''} {savedAddress.district ? `, Dist: ${savedAddress.district}` : ''}, {savedAddress.state} - <strong>{savedAddress.pinCode}</strong>
+                        </Typography>
+                        {savedAddress.email && (
+                          <Typography sx={{ fontSize: '0.76rem', color: '#6B7280', mt: 0.3 }}>
+                            Email: {savedAddress.email}
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Condition 2: Use Different Address */}
+                <Box
+                  onClick={() => {
+                    setAddressChoice('different');
+                    setFormErrors({});
+                  }}
+                  sx={{
+                    border: '1.5px solid',
+                    borderColor: addressChoice === 'different' ? '#111827' : '#E5E7EB',
+                    bgcolor: addressChoice === 'different' ? '#F9FAFB' : '#FFFFFF',
+                    borderRadius: '10px',
+                    p: 2,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.5,
+                    boxShadow: addressChoice === 'different' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                    '&:hover': {
+                      borderColor: addressChoice === 'different' ? '#111827' : '#9CA3AF'
                     }
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
+                  }}
+                >
+                  <Radio 
+                    checked={addressChoice === 'different'} 
+                    onChange={() => {
+                      setAddressChoice('different');
+                      setFormErrors({});
                     }}
+                    value="different" 
+                    sx={{ 
+                      p: 0, 
+                      mt: 0.2,
+                      color: '#D1D5DB', 
+                      '&.Mui-checked': { color: '#111827' } 
+                    }} 
                   />
-                  {formErrors.email && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.email}
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AddLocationAltOutlined sx={{ fontSize: 18, color: addressChoice === 'different' ? '#111827' : '#6B7280' }} />
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.92rem', color: '#111827' }}>
+                        Use Different Address
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '0.78rem', color: '#6B7280', mt: 0.3 }}>
+                      Enter a different shipping or delivery address for this order
                     </Typography>
-                  )}
-                </Grid>
+                  </Box>
+                </Box>
 
-                {/* Phone Number */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    Phone Number <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="+91 98765 43210"
-                    error={!!formErrors.phone}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <PhoneOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                      </InputAdornment>
-                    }
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
-                    }}
-                  />
-                  {formErrors.phone && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.phone}
-                    </Typography>
-                  )}
-                </Grid>
+              </Box>
 
-                {/* Address Line 1 */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    Address Line 1 <span style={{ color: '#EF4444' }}>*</span>
+              {/* Form Section: Opens ONLY when "Use Different Address" is checked (fields matched with userDetails model) */}
+              <Collapse in={addressChoice === 'different'} unmountOnExit={false}>
+                <Box sx={{ pt: 2, borderTop: '1px dashed #E5E7EB', mt: 1 }}>
+                  <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#111827', mb: 2 }}>
+                    Enter New Shipping Details
                   </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    value={formData.addressLine1}
-                    onChange={(e) => handleInputChange('addressLine1', e.target.value)}
-                    placeholder="House No, Building Name"
-                    error={!!formErrors.addressLine1}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <HomeOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                      </InputAdornment>
-                    }
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
-                    }}
-                  />
-                  {formErrors.addressLine1 && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.addressLine1}
-                    </Typography>
-                  )}
-                </Grid>
 
-                {/* Address Line 2 */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    Address Line 2
-                  </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    value={formData.addressLine2}
-                    onChange={(e) => handleInputChange('addressLine2', e.target.value)}
-                    placeholder="Street, Area, Landmark"
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
-                    }}
-                  />
-                </Grid>
+                  {/* Form Grid */}
+                  <Grid container spacing={2}>
+                    
+                    {/* Full Name */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        Full Name <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange('fullName', e.target.value)}
+                        placeholder="Enter your full name"
+                        error={!!formErrors.fullName}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <PersonOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.fullName && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.fullName}
+                        </Typography>
+                      )}
+                    </Grid>
 
-                {/* City */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    City <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Select City"
-                    error={!!formErrors.city}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <LocationCityOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                      </InputAdornment>
-                    }
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
-                    }}
-                  />
-                  {formErrors.city && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.city}
-                    </Typography>
-                  )}
-                </Grid>
+                    {/* Email Address */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        Email Address <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="you@example.com"
+                        error={!!formErrors.email}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <MailOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.email && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.email}
+                        </Typography>
+                      )}
+                    </Grid>
 
-                {/* State */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    State <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <FormControl fullWidth error={!!formErrors.state}>
-                    <Select
-                      displayEmpty
-                      value={formData.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                      startAdornment={
-                        <InputAdornment position="start">
-                          <PlaceOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                        </InputAdornment>
-                      }
-                      sx={{
-                        height: 44,
-                        borderRadius: '8px',
-                        fontSize: '0.88rem',
-                        '& fieldset': { borderColor: '#E5E7EB' },
-                        '&:hover fieldset': { borderColor: '#9CA3AF' },
-                        '&.Mui-focused fieldset': { borderColor: '#111827' }
-                      }}
+                    {/* Phone Number */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        Phone Number <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="+91 98765 43210"
+                        error={!!formErrors.phone}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <PhoneOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.phone && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.phone}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    {/* Area / Apartment / Landmark (userDetails field: area) */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        Area / Apartment / Landmark <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.area}
+                        onChange={(e) => handleInputChange('area', e.target.value)}
+                        placeholder="Flat, House no., Area, Landmark"
+                        error={!!formErrors.area}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <HomeOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.area && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.area}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    {/* Post Office (userDetails field: postOffice) */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        Post Office <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.postOffice}
+                        onChange={(e) => handleInputChange('postOffice', e.target.value)}
+                        placeholder="Enter Post Office"
+                        error={!!formErrors.postOffice}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <LocalPostOfficeOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.postOffice && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.postOffice}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    {/* City / Town (userDetails field: city) */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        City / Town <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        placeholder="Enter City / Town"
+                        error={!!formErrors.city}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <LocationCityOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.city && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.city}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    {/* District (userDetails field: district) */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        District <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.district}
+                        onChange={(e) => handleInputChange('district', e.target.value)}
+                        placeholder="Enter District"
+                        error={!!formErrors.district}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <BusinessOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.district && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.district}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    {/* State (userDetails field: state) */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        State <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <FormControl fullWidth error={!!formErrors.state}>
+                        <Select
+                          displayEmpty
+                          value={formData.state}
+                          onChange={(e) => handleInputChange('state', e.target.value)}
+                          startAdornment={
+                            <InputAdornment position="start">
+                              <PlaceOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                            </InputAdornment>
+                          }
+                          sx={{
+                            height: 44,
+                            borderRadius: '8px',
+                            fontSize: '0.88rem',
+                            '& fieldset': { borderColor: '#E5E7EB' },
+                            '&:hover fieldset': { borderColor: '#9CA3AF' },
+                            '&.Mui-focused fieldset': { borderColor: '#111827' }
+                          }}
+                        >
+                          <MenuItem value="" disabled>
+                            <Typography sx={{ color: '#9CA3AF', fontSize: '0.88rem' }}>Select State</Typography>
+                          </MenuItem>
+                          {INDIAN_STATES.map((st) => (
+                            <MenuItem key={st} value={st}>{st}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      {formErrors.state && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.state}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                    {/* PIN Code (userDetails field: pinCode) */}
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                        PIN Code <span style={{ color: '#EF4444' }}>*</span>
+                      </Typography>
+                      <OutlinedInput
+                        fullWidth
+                        value={formData.pinCode}
+                        onChange={(e) => handleInputChange('pinCode', e.target.value)}
+                        placeholder="Enter 6-digit PIN Code"
+                        error={!!formErrors.pinCode}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <PinDropOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
+                          </InputAdornment>
+                        }
+                        sx={{
+                          height: 44,
+                          borderRadius: '8px',
+                          fontSize: '0.88rem',
+                          '& fieldset': { borderColor: '#E5E7EB' },
+                          '&:hover fieldset': { borderColor: '#9CA3AF' },
+                          '&.Mui-focused fieldset': { borderColor: '#111827' }
+                        }}
+                      />
+                      {formErrors.pinCode && (
+                        <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
+                          {formErrors.pinCode}
+                        </Typography>
+                      )}
+                    </Grid>
+
+                  </Grid>
+
+                  {/* Save to Profile Checkbox */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
+                    <Checkbox 
+                      checked={saveToProfile}
+                      onChange={(e) => setSaveToProfile(e.target.checked)}
+                      size="small"
+                      sx={{ p: 0.5, color: '#9CA3AF', '&.Mui-checked': { color: '#111827' } }}
+                    />
+                    <Typography 
+                      sx={{ fontSize: '0.82rem', color: '#4B5563', ml: 0.8, cursor: 'pointer', userSelect: 'none' }} 
+                      onClick={() => setSaveToProfile(!saveToProfile)}
                     >
-                      <MenuItem value="" disabled>
-                        <Typography sx={{ color: '#9CA3AF', fontSize: '0.88rem' }}>Select State</Typography>
-                      </MenuItem>
-                      {INDIAN_STATES.map((st) => (
-                        <MenuItem key={st} value={st}>{st}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  {formErrors.state && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.state}
+                      Save this address to my profile for future orders
                     </Typography>
-                  )}
-                </Grid>
-
-                {/* PIN Code */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
-                    PIN Code <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <OutlinedInput
-                    fullWidth
-                    value={formData.pinCode}
-                    onChange={(e) => handleInputChange('pinCode', e.target.value)}
-                    placeholder="Enter PIN Code"
-                    error={!!formErrors.pinCode}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <PinDropOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} />
-                      </InputAdornment>
-                    }
-                    sx={{
-                      height: 44,
-                      borderRadius: '8px',
-                      fontSize: '0.88rem',
-                      '& fieldset': { borderColor: '#E5E7EB' },
-                      '&:hover fieldset': { borderColor: '#9CA3AF' },
-                      '&.Mui-focused fieldset': { borderColor: '#111827' }
-                    }}
-                  />
-                  {formErrors.pinCode && (
-                    <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.4 }}>
-                      {formErrors.pinCode}
-                    </Typography>
-                  )}
-                </Grid>
-
-              </Grid>
+                  </Box>
+                </Box>
+              </Collapse>
             </Box>
 
             {/* STEP 2: SHIPPING METHOD CARD */}
@@ -1432,6 +1959,233 @@ export default function Checkout() {
         </Grid>
 
       </Container>
+
+      {/* Edit Profile Saved Address Modal (strictly userDetails model schema) */}
+      <Dialog
+        open={profileAddressModalOpen}
+        onClose={() => !savingProfileAddress && setProfileAddressModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '16px', p: { xs: 1, sm: 1.5 } }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: '#111827', fontSize: '1.15rem', pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Edit Profile Address</span>
+          <IconButton size="small" onClick={() => setProfileAddressModalOpen(false)}>
+            <Close sx={{ fontSize: 20 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ py: 2 }}>
+          <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
+            Update your saved profile address. These details are stored in your profile and used for delivery.
+          </Typography>
+          <Grid container spacing={2}>
+            {/* Full Name */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                Full Name <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.fullName}
+                onChange={(e) => handleProfileAddressChange('fullName', e.target.value)}
+                placeholder="Enter full name"
+                error={!!profileAddressErrors.fullName}
+                startAdornment={<InputAdornment position="start"><PersonOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.fullName && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.fullName}</Typography>
+              )}
+            </Grid>
+
+            {/* Email Address */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                Email Address <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                type="email"
+                value={profileAddressForm.email}
+                onChange={(e) => handleProfileAddressChange('email', e.target.value)}
+                placeholder="you@example.com"
+                error={!!profileAddressErrors.email}
+                startAdornment={<InputAdornment position="start"><MailOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.email && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.email}</Typography>
+              )}
+            </Grid>
+
+            {/* Phone Number */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                Phone Number <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.phone}
+                onChange={(e) => handleProfileAddressChange('phone', e.target.value)}
+                placeholder="+91 98765 43210"
+                error={!!profileAddressErrors.phone}
+                startAdornment={<InputAdornment position="start"><PhoneOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.phone && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.phone}</Typography>
+              )}
+            </Grid>
+
+            {/* Area / Apartment / Landmark */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                Area / Apartment / Landmark <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.area}
+                onChange={(e) => handleProfileAddressChange('area', e.target.value)}
+                placeholder="Flat, House no., Area, Landmark"
+                error={!!profileAddressErrors.area}
+                startAdornment={<InputAdornment position="start"><HomeOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.area && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.area}</Typography>
+              )}
+            </Grid>
+
+            {/* Post Office */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                Post Office <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.postOffice}
+                onChange={(e) => handleProfileAddressChange('postOffice', e.target.value)}
+                placeholder="Enter Post Office"
+                error={!!profileAddressErrors.postOffice}
+                startAdornment={<InputAdornment position="start"><LocalPostOfficeOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.postOffice && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.postOffice}</Typography>
+              )}
+            </Grid>
+
+            {/* City / Town */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                City / Town <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.city}
+                onChange={(e) => handleProfileAddressChange('city', e.target.value)}
+                placeholder="Enter City / Town"
+                error={!!profileAddressErrors.city}
+                startAdornment={<InputAdornment position="start"><LocationCityOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.city && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.city}</Typography>
+              )}
+            </Grid>
+
+            {/* District */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                District <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.district}
+                onChange={(e) => handleProfileAddressChange('district', e.target.value)}
+                placeholder="Enter District"
+                error={!!profileAddressErrors.district}
+                startAdornment={<InputAdornment position="start"><BusinessOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.district && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.district}</Typography>
+              )}
+            </Grid>
+
+            {/* State */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                State <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <FormControl fullWidth error={!!profileAddressErrors.state}>
+                <Select
+                  displayEmpty
+                  value={profileAddressForm.state}
+                  onChange={(e) => handleProfileAddressChange('state', e.target.value)}
+                  startAdornment={<InputAdornment position="start"><PlaceOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                  sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+                >
+                  <MenuItem value="" disabled><Typography sx={{ color: '#9CA3AF', fontSize: '0.88rem' }}>Select State</Typography></MenuItem>
+                  {INDIAN_STATES.map((st) => (
+                    <MenuItem key={st} value={st}>{st}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {profileAddressErrors.state && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.state}</Typography>
+              )}
+            </Grid>
+
+            {/* PIN Code */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', mb: 0.6 }}>
+                PIN Code <span style={{ color: '#EF4444' }}>*</span>
+              </Typography>
+              <OutlinedInput
+                fullWidth
+                value={profileAddressForm.pinCode}
+                onChange={(e) => handleProfileAddressChange('pinCode', e.target.value)}
+                placeholder="Enter 6-digit PIN Code"
+                error={!!profileAddressErrors.pinCode}
+                startAdornment={<InputAdornment position="start"><PinDropOutlined sx={{ color: '#9CA3AF', fontSize: 19 }} /></InputAdornment>}
+                sx={{ height: 42, borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+              {profileAddressErrors.pinCode && (
+                <Typography sx={{ color: '#EF4444', fontSize: '0.74rem', mt: 0.3 }}>{profileAddressErrors.pinCode}</Typography>
+              )}
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button 
+            onClick={() => setProfileAddressModalOpen(false)} 
+            disabled={savingProfileAddress}
+            sx={{ color: '#4B5563', textTransform: 'none', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveProfileAddress}
+            disabled={savingProfileAddress}
+            startIcon={savingProfileAddress && <CircularProgress size={16} color="inherit" />}
+            sx={{
+              bgcolor: '#111827',
+              color: '#FFFFFF',
+              borderRadius: '8px',
+              textTransform: 'none',
+              px: 3,
+              fontWeight: 600,
+              '&:hover': { bgcolor: '#000000' }
+            }}
+          >
+            {savingProfileAddress ? 'Saving...' : 'Save Profile Address'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -4,9 +4,22 @@ import { Grid, Card, CardContent, Skeleton, Box } from '@mui/material';
 export default function LoadingSkeleton({ type = 'product', count = 8 }) {
   if (type === 'product') {
     return (
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {Array.from(new Array(count)).map((_, index) => (
-          <Grid key={index} size={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }} sx={{ display: 'flex', width: '100%' }}>
+          <Grid 
+            key={index} 
+            size={{ xs: 12, sm: 6, md: 3, lg: 3, xl: 3 }} 
+            sx={{ 
+              display: 'flex', 
+              width: {
+                xs: '100%',
+                sm: 'calc(50% - 8px)',
+                md: 'calc(25% - 12px)',
+                lg: 'calc(25% - 12px)',
+                xl: 'calc(25% - 12px)'
+              } 
+            }}
+          >
             <Card sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
               <Skeleton variant="rectangular" height={200} />
               <CardContent sx={{ flexGrow: 1 }}>

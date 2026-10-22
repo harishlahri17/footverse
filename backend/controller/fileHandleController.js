@@ -6,27 +6,27 @@ const storage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: "footverse/products",
-        allowed_formats: ["jpg", "jpeg", "png"],
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
     },
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png"];
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
 
-    if (allowedTypes.includes(file.mimetype)) {
+    if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error("Only JPG, JPEG and PNG images are allowed"));
+        cb(new Error("Only JPG, JPEG, PNG, and WEBP images are allowed"));
     }
 };
 
 const uploadProduct = multer({
     storage,
     limits: {
-        fileSize: 2 * 1024 * 1024,
+        fileSize: 10 * 1024 * 1024, // 10MB
         files: 5,
     },
     fileFilter,
 });
 
-module.exports = { uploadProduct };
+module.exports = { uploadProduct};

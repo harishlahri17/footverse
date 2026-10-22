@@ -178,93 +178,104 @@ export default function UserProfile({ showProfileModal, setShowProfileModal }) {
                                 <form onSubmit={updateProfile}>
                                     <div className="row">
                                         <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>Name</label>
+                                            <label className="form-label fw-semibold">Full Name</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
                                                 id='fullName'
-                                                value={user?.fullName || " "}
+                                                value={user?.fullName || ""}
                                                 onChange={handleEditInput}
+                                                placeholder="Enter full name"
+                                                required
                                             />
                                         </div>
                                         <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>Email</label>
+                                            <label className="form-label fw-semibold">Email Address</label>
                                             <input
                                                 type="email"
                                                 className="form-control"
                                                 id='email'
-                                                value={user?.email || " "}
+                                                value={user?.email || ""}
                                                 onChange={handleEditInput}
+                                                placeholder="Enter email address"
+                                                required
                                             />
                                         </div>
                                         <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>Phone</label>
+                                            <label className="form-label fw-semibold">Phone Number</label>
                                             <input
-                                                type="text"
+                                                type="tel"
                                                 className="form-control"
                                                 id='phone'
-                                                value={user?.phone || " "}
+                                                value={user?.phone || ""}
                                                 onChange={handleEditInput}
+                                                placeholder="+91 98765 43210"
                                             />
                                         </div>
                                         <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>State</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                id='state'
-                                                value={user?.state || " "}
-                                                onChange={handleEditInput}
-                                            />
-                                        </div>
-                                        <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>District</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                id='district'
-                                                value={user?.district || " "}
-                                                onChange={handleEditInput}
-                                            />
-                                        </div>
-                                        <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>City/Town</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                id='city'
-                                                value={user?.city || " "}
-                                                onChange={handleEditInput}
-                                            />
-                                        </div>
-                                        <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>Post Office</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                id='postOffice'
-                                                value={user?.postOffice || " "}
-                                                onChange={handleEditInput}
-                                            />
-                                        </div>
-                                        <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>Area/Apartment and Landmark</label>
+                                            <label className="form-label fw-semibold">Area / Apartment / Street / Landmark</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
                                                 id='area'
-                                                value={user?.area || " "}
+                                                value={user?.area || ""}
                                                 onChange={handleEditInput}
+                                                placeholder="House/Flat No., Building, Street, Landmark"
                                             />
                                         </div>
                                         <div className="col-sm-12 col-lg-6 mb-3">
-                                            <label>Pin Code</label>
+                                            <label className="form-label fw-semibold">Post Office</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                id='postOffice'
+                                                value={user?.postOffice || ""}
+                                                onChange={handleEditInput}
+                                                placeholder="Enter Post Office"
+                                            />
+                                        </div>
+                                        <div className="col-sm-12 col-lg-6 mb-3">
+                                            <label className="form-label fw-semibold">City / Town</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                id='city'
+                                                value={user?.city || ""}
+                                                onChange={handleEditInput}
+                                                placeholder="Enter City / Town"
+                                            />
+                                        </div>
+                                        <div className="col-sm-12 col-lg-6 mb-3">
+                                            <label className="form-label fw-semibold">District</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                id='district'
+                                                value={user?.district || ""}
+                                                onChange={handleEditInput}
+                                                placeholder="Enter District"
+                                            />
+                                        </div>
+                                        <div className="col-sm-12 col-lg-6 mb-3">
+                                            <label className="form-label fw-semibold">State</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                id='state'
+                                                value={user?.state || ""}
+                                                onChange={handleEditInput}
+                                                placeholder="Enter State"
+                                            />
+                                        </div>
+                                        <div className="col-sm-12 col-lg-6 mb-3">
+                                            <label className="form-label fw-semibold">PIN Code</label>
                                             <input
                                                 type="text"
                                                 className="form-control"
                                                 id='pinCode'
-                                                value={user?.pinCode || " "}
+                                                value={user?.pinCode || ""}
                                                 onChange={handleEditInput}
+                                                placeholder="Enter 6-digit PIN code"
                                             />
                                         </div>
                                     </div>
